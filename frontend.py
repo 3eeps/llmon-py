@@ -12,8 +12,6 @@ callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 conversation_buffer = ConversationBufferMemory()
 thread_count = 12
 ctx_size = 2048
-show_model_info = False
-show_chat_history = False
 user_input = ""
 
 # init model
@@ -22,16 +20,17 @@ ggml_model = LlamaCpp(
     n_ctx = ctx_size, 
     n_threads = thread_count,
     callback_manager = callback_manager, 
-    verbose = show_model_info)
+    verbose = False)
 
-print ("chadGPT v0.1")
+print ("chadGPT v0.5")
 print (">>>")
+
 while user_input != "exit":
     user_input = input()
     generate = ConversationChain(
         llm = ggml_model,
         memory = conversation_buffer,
-        verbose = show_chat_history)
+        verbose = False)
 
     generate.predict(input = user_input)
     print ("\n")
