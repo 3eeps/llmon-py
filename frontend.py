@@ -1,9 +1,8 @@
 # jank local frontend for llm models 
 
 # libraries 
+from langchain import LlamaCpp, ConversationChain
 from langchain.memory import ConversationBufferMemory
-from langchain.llms import LlamaCpp
-from langchain import PromptTemplate, LLMChain, ConversationChain
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
