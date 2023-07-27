@@ -23,6 +23,7 @@ ggml_model = LlamaCpp(
 
 print ("chadGPT v0.5")
 
+# run model until user exit
 while user_input != "exit":
     user_input = input(">")
     generate = ConversationChain(
