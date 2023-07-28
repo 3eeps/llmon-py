@@ -21,7 +21,7 @@ ggml_model = LlamaCpp(
 
 os.system("cls")
 print (Fore.GREEN + "chadGPT v0.5")
-# run model
+# run that shit
 while user_input != "exit":
     user_input = input(Fore.BLUE + "> ")
     generate = ConversationChain(
@@ -29,5 +29,5 @@ while user_input != "exit":
         memory = conversation_buffer,
         verbose = False)
     # output response
-    print (Fore.RED + "")
+    print (Fore.RED)
     generate.predict(input = user_input)
