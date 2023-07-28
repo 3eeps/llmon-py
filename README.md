@@ -1,4 +1,4 @@
-# llmon-py - built with langchain, 
+# llmon-py - built with langchain
 a simple interface for local hosting of ggml formatted large language models for windows
 
 hopefully someone can be inspired to build something great from this! 
