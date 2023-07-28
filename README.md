@@ -4,4 +4,4 @@ a simple interface for local hosting of ggml formatted large language models for
 hopefully someone can be inspired to build something great from this! 
 it gets the basics done, conversation is passed back to the model each reply from the user
 
-TODO improve readme/everthing
+TODO improve readme/everything
