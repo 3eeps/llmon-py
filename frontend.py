@@ -20,7 +20,7 @@ ggml_model = LlamaCpp(
     verbose = False)
 
 os.system("cls")
-print (Fore.GREEN + "<model name>")
+print (Fore.GREEN + "chadGPT v0.5")
 # run that shit
 while user_input != "exit":
     user_input = input(Fore.BLUE + "> ")
@@ -31,3 +31,4 @@ while user_input != "exit":
     # output response
     print (Fore.RED)
     generate.predict(input = user_input)
+    print("\n")
