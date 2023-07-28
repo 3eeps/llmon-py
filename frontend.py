@@ -1,7 +1,6 @@
 # jank local frontend for llm models 
 
 # libraries 
-import os
 from colorama import Fore
 from langchain import LlamaCpp, ConversationChain
 from langchain.memory import ConversationBufferMemory
@@ -19,7 +18,6 @@ ggml_model = LlamaCpp(
     callback_manager = callback_manager, 
     verbose = False)
 
-os.system("cls")
 print (Fore.GREEN + "model name")
 # run that shit
 while user_input != "exit":
