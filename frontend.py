@@ -12,7 +12,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 user_input = ""
 callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 conversation_buffer = ConversationBufferMemory()
-ctx_size = 2048
+ctx_size = 4096
 ggml_model = LlamaCpp(
     model_path = "./based-30b.ggmlv3.q4_K_M.bin", 
     n_ctx = ctx_size, 
