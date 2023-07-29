@@ -7,6 +7,8 @@ from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
+# TODO - get tokens per message, when model reaches limit, summerize with summary buffer and add back to model memory
+
 # init model
 user_input = ""
 callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
