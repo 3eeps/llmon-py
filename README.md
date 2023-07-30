@@ -1,3 +1,3 @@
 # llmon-py - built with langchain
 
-TODO improve readme/everything
+TODO readme/everything
