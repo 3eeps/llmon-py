@@ -1,4 +1,3 @@
-# libraries 
 from colorama import Fore
 from langchain import LlamaCpp, ConversationChain
 from langchain.memory import ConversationBufferMemory
