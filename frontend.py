@@ -12,15 +12,15 @@ def run_model(model, mem_buffer):
     llm.predict(input=user_input)
     print("\n")
 
-def main():
+def main(ctx_size, threads):
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
-    mem_buffer = ConversationBufferMemory(ai_prefix = "Johnny 5")
-    model = LlamaCpp(model_path="./based-30b.ggmlv3.q4_K_M.bin", n_ctx=2048, n_threads=10, callback_manager=callback_manager, verbose=False)
+    mem_buffer = ConversationBufferMemory(ai_prefix="Johnny 5", human_prefix="3eeps")
+    model = LlamaCpp(model_path="./based-30b.ggmlv3.q4_K_M.bin", n_ctx=ctx_size, n_threads=threads, callback_manager=callback_manager, verbose=False)
     
-    print (Fore.YELLOW + "llamon-py")
-    user_input = None    
+    print (Fore.YELLOW + "llmon-py")
+    user_input = None
     while user_input != "exit":
         run_model(model, mem_buffer)
 
 if __name__ == "__main__":
-    main()
+    main(2048, 10)
