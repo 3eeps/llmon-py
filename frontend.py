@@ -5,10 +5,10 @@ from langchain.memory import ConversationSummaryBufferMemory
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
-def main():
+def main(ctx_size, threads, ai_name):
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
-    model = LlamaCpp(model_path="./based-30b.ggmlv3.q4_K_M.bin", n_ctx=2048, n_threads=10, callback_manager=callback_manager, verbose=False)
-    llm = ConversationChain(llm=model, memory=ConversationSummaryBufferMemory(ai_prefix="Johnny 5", llm=model, max_token_limit=2048, verbose=False))
+    model = LlamaCpp(model_path="based-30b.ggmlv3.q4_K_M.bin", n_ctx=ctx_size, n_threads=threads, callback_manager=callback_manager, verbose=False)
+    llm = ConversationChain(llm=model, memory=ConversationSummaryBufferMemory(ai_prefix=ai_name, llm=model, max_token_limit=2048, verbose=False))
     
     print (Fore.YELLOW + "llmon-py")
     user_input = None
@@ -19,4 +19,4 @@ def main():
         print("\n")
 
 if __name__ == "__main__":
-    main()
+    main(2048, 10, "Johnny 5")
