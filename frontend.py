@@ -1,15 +1,17 @@
 # /codespace/llm-frontend.py
 import logging
+from datetime import date
 from colorama import Fore
 from langchain import LlamaCpp, ConversationChain
 from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
-def main(model, ctx_size, cores, ai_name, user_name):
-    logging.basicConfig(filename="chat.log", filemode="w", level=logging.INFO, format="%(message)s")
+def main(model, ctx_size, cores, gpu_layers, ai_name, user_name):
+    date_log = date.today()
+    logging.basicConfig(filename=f"{user_name}-{ai_name}-{date_log}.log", filemode="w", level=logging.INFO, format="%(message)s")
     try:
-        model = LlamaCpp(model_path=model, n_ctx=ctx_size, n_threads=cores, callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]), verbose=False)
+        model = LlamaCpp(model_path=model, n_gpu_layers=gpu_layers, n_ctx=ctx_size, n_threads=cores, callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]), verbose=False)
     except:
         print("cannot load model")    
     llm = ConversationChain(llm=model, memory=ConversationBufferMemory(ai_prefix=ai_name, verbose=False))  
@@ -28,4 +30,4 @@ def main(model, ctx_size, cores, ai_name, user_name):
         print("\n")
               
 if __name__ == "__main__":
-    main("based-30b.ggmlv3.q4_K_M.bin", 2048, 10, "Johnny 5", "User")
+    main("based-30b.ggmlv3.q4_K_M.bin", 2048, 10, 4, "Johnny 5", "User")
