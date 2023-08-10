@@ -17,7 +17,7 @@ def main(model, ctx_size, cores, gpu_layers, ai_name, user_name):
     llm = ConversationChain(llm=model, memory=ConversationBufferMemory(ai_prefix=ai_name, verbose=False))  
 
     print (Fore.YELLOW + "llmon-py")
-    user_input = None
+    user_input = str
     while user_input != "exit":
         user_input = input(Fore.BLUE + "> ")
         logging.info(f"{user_name}: {user_input}")
