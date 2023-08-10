@@ -7,7 +7,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
-def main(model, ctx_size, cores, gpu_layers, ai_name, user_name):
+def main(model=str, ctx_size=int, cores=int, gpu_layers=int, ai_name=str, user_name=str):
     date_log = date.today()
     logging.basicConfig(filename=f"{user_name}-{ai_name}-{date_log}.log", filemode="w", level=logging.INFO, format="%(message)s")
     try:
