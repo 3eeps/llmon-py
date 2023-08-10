@@ -1,8 +1,8 @@
 # /codespace/llm-frontend.py
 import logging
 from colorama import Fore
-from langchain import LlamaCpp, ConversationChain, PromptTemplate
-from langchain.memory import ConversationBufferMemory, ConversationEntityMemory, CombinedMemory
+from langchain import LlamaCpp, ConversationChain
+from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
