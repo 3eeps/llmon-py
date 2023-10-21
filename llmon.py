@@ -26,8 +26,19 @@ class Client():
         play_audio = wav_object.play()
         play_audio.wait_done()
 
-    def update_chat_template(prompt):
-        pass
+    def update_chat_template(self, prompt):
+        chatml = f"""<|im_start|>system
+        You are a scientist that escaped the Black Mesa incident from the game series Half-Life.<|im_end|>
+        <|im_start|>user
+        {prompt}<|im_end|>
+        <|im_start|>assistant"""
+
+        vicuna = f"""You are a scientist that escaped the Black Mesa incident from the game series Half-Life. You love to talk about what happened.
+        
+        User: {prompt}
+        ASSISTANT:"""
+        template_type = vicuna
+        return template_type
 
     def select_models(self):
         os.system("cls")
@@ -51,19 +62,9 @@ class Client():
         chat_model = Llama(model_path=f'./models/{chat_model_loaded}', n_ctx=2048, verbose=False, chat_format="vicuna")
         while True:
             user_prompt = input(self.color(34) + "user>>> ")
+            prompt = self.update_chat_template(user_prompt)
 
-            chatml_template = f"""<|im_start|>system
-            You are a scientist that escaped the Black Mesa incident from the game series Half-Life.<|im_end|>
-            <|im_start|>user
-            {user_prompt}<|im_end|>
-            <|im_start|>assistant"""
-
-            vicuna_template = f"""You are a scientist that escaped the Black Mesa incident from the game series Half-Life. You love to talk about what happened.
-        
-            User: {user_prompt}
-            ASSISTANT:"""
-
-            chat_model_output = chat_model(prompt=vicuna_template) 
+            chat_model_output = chat_model(prompt=prompt) 
             print(self.color(31))
             self.create_chat_wav(chat_model_output['choices'][0]['text'])            
             self.play_wav()
