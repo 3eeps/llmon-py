@@ -7,18 +7,33 @@ import simpleaudio
 class Client():
     def __init__(self):
         self.file_count = 0
+        self.new_session = True
         self.model_path = "./models"
         self.model_list = []
         self.model_count = 0
         self.path_list = os.scandir(self.model_path)
         self.tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v1")
         
+    def log_chat(self, user_message, model_message):
+        if self.new_session == False:
+            write_type = 'a'
+        else:
+            write_type = 'w'
+        self.new_session = False
+
+        messages_to_log = [f'user: {user_message}', f'chat_output{self.file_count}.wav: {model_message}']
+        with open('chat_history.log', f'{write_type}') as output:
+            for line in messages_to_log:
+                output.write(line)
+                output.write('\n')
+        output.close()
+
     def color(self, color_code):
         return f"\33[{color_code}m".format(code=color_code)
 
     def create_chat_wav(self, chat_model_text=str):
         self.file_count = self.file_count + 1
-        self.tts_model.tts_to_file(text=chat_model_text, speaker_wav='./voices/max_payne.wav', file_path=f'./chat_output{self.file_count}.wav', language="en")
+        self.tts_model.tts_to_file(text=chat_model_text, speaker_wav='./voices/redguard0.wav', file_path=f'./chat_output{self.file_count}.wav', language="en")
 
     def play_wav(self):
         wav_filename = f'./chat_output{self.file_count}.wav'
@@ -28,13 +43,12 @@ class Client():
 
     def update_chat_template(self, prompt):
         chatml = f"""<|im_start|>system
-        You are a scientist that escaped the Black Mesa incident from the game series Half-Life.<|im_end|>
+        You are a scientist from the game Half-Life that escaped the Black Mesa incident. You have many incredible stories to share.<|im_end|>
         <|im_start|>user
         {prompt}<|im_end|>
         <|im_start|>assistant"""
 
-        vicuna = f"""You are a scientist that escaped the Black Mesa incident from the game series Half-Life. You love to talk about what happened.
-        
+        vicuna = f"""You are a scientist from the game Half-Life that escaped the Black Mesa incident. You have many incredible stories to share.
         User: {prompt}
         ASSISTANT:"""
         template_type = vicuna
@@ -57,14 +71,17 @@ class Client():
         return chat_model_filename
     
     def start(self):
+        running_client = True
         chat_model_loaded = self.select_models()
         print (self.color(93) + "llmon-py " + self.color(90) + "using " + self.color(37) + f"{chat_model_loaded}")
         chat_model = Llama(model_path=f'./models/{chat_model_loaded}', n_ctx=2048, verbose=False, chat_format="vicuna")
-        while True:
+      
+        while running_client:
             user_prompt = input(self.color(34) + "user>>> ")
             prompt = self.update_chat_template(user_prompt)
 
             chat_model_output = chat_model(prompt=prompt) 
+            self.log_chat(user_message=user_prompt, model_message=chat_model_output['choices'][0]['text'])
             print(self.color(31))
             self.create_chat_wav(chat_model_output['choices'][0]['text'])            
             self.play_wav()
