@@ -8,7 +8,7 @@ uses llama-cpp-python, coqui.ai and pywhispercpp
 
 its dope.
 
-soon:
+soon---->
 
 gui
 
