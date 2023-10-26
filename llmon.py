@@ -79,7 +79,7 @@ class Client():
         basic = f"""{prompt}"""
 
         chatml = f"""system
-        You are an helpful AI assisant. Please take all text from the user prompt, and repeat it back. Thank you!
+        You are an helpful AI assisant. Please take all text from the user prompt, and...
         user
         {prompt}
         assistant"""
