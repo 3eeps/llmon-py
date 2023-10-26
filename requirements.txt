@@ -1,0 +1,7 @@
+TTS
+llama-cpp-python
+pywhispercpp
+nltk
+simpleaudio
+sounddevice
+scipy
