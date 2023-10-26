@@ -9,17 +9,20 @@ import simpleaudio
 import sounddevice 
 from scipy.io.wavfile import write
 
-# client app
+from nltk.tokenize import sent_tokenize
+import nltk
+
 class Client():
     def __init__(self):
         self.rec_sample_freq = 44100
-        self.rec_seconds = 5
+        self.rec_seconds = 10
         self.rec_channels = 2
         self.test_output = './voices/aftertest.wav'
         self.user_file_count = 0
         self.rec_user_voice_file = f'user_chatout-{self.user_file_count}.wav'
         self.stt_model = Model('./models/stt/ggml-tiny.bin')
 
+        self.chat_template = str
         self.file_count = 0
         self.new_session = True
         self.model_path = "./models"
@@ -29,7 +32,7 @@ class Client():
 
         self.tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v1").cuda()
 
-    def log_chat(self, user_message, model_message):
+    def log_chat(self, user_message=str, model_message=str):
         if self.new_session == False:
             write_type = 'a'
         else:
@@ -57,11 +60,11 @@ class Client():
         play_audio.wait_done()
 
     def voice_to_text(self):
-        store_text = []
-        user_voice_data = self.stt_model.transcribe(f'./{self.test_output}', speed_up=False)
+        text_data = []
+        user_voice_data = self.stt_model.transcribe(f'./{self.rec_user_voice_file}')
         for voice in user_voice_data:        
-            store_text.append(voice.text)
-        combined_text = ' '.join(store_text)
+            text_data.append(voice.text)
+        combined_text = ' '.join(text_data)
         print(combined_text)
         return combined_text
     
@@ -71,23 +74,22 @@ class Client():
         sounddevice.wait()
         write(filename=self.rec_user_voice_file, rate=self.rec_sample_freq, data=rec_user_voice)
                                  
-    def update_chat_template(self, prompt):
+    def update_chat_template(self, prompt=str):
+
+        basic = f"""{prompt}"""
+
         chatml = f"""system
-        You are a scientist from the Half-Life game that escaped the Black Mesa incident. You love to talk about it.
+        You are an helpful AI assisant. Please take all text from the user prompt, and repeat it back. Thank you!
         user
         {prompt}
         assistant"""
 
-        vicuna = f"""You are a scientist from the Half-Life game that escaped the Black Mesa incident. You love to talk about it.
+        vicuna = f"""You are an AI assistant, but more importantly, a close friend of mine. Your name is Johnny 5. :)
 
         User: {prompt}
         ASSISTANT:"""
         template_type = vicuna
         return template_type
-
-    def select_character(self):
-        # pick character profile for chat (template + .wav file)
-        pass
 
     def select_models(self):
         os.system("cls")
@@ -109,23 +111,23 @@ class Client():
         running_client = True
         chat_model_loaded = self.select_models()
         print (self.color(93) + "llmon-py " + self.color(90) + "using " + self.color(37) + f"{chat_model_loaded}")
-        chat_model = Llama(model_path=f'./models/{chat_model_loaded}', n_ctx=2048, verbose=False, chat_format="vicuna")
+        chat_model = Llama(model_path=f'./models/{chat_model_loaded}', main_gpu=0, n_gpu_layers=22, n_ctx=2048, verbose=False, chat_format="vicuna")
       
         while running_client:
             user_prompt = input(self.color(34) + "user>>> ")
-            if user_prompt == 'rec':
-                #self.record_user()  
+            if user_prompt == '':
+                self.record_user()  
                 text = self.voice_to_text()
                 prompt = self.update_chat_template(prompt=text)
-            else:
-                prompt = self.update_chat_template(prompt=user_prompt)
-
+            else:               
+                prompt = self.update_chat_template(user_prompt)
+                
             chat_model_output = chat_model(prompt=prompt) 
             self.log_chat(user_message=user_prompt, model_message=chat_model_output['choices'][0]['text'])
             print(self.color(31))
             self.create_chat_wav(chat_model_output['choices'][0]['text'])            
             self.play_wav()
-
+            
 if __name__ == "__main__":
     client = Client()
     client.start()
