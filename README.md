@@ -9,5 +9,8 @@ uses llama-cpp-python, coqui.ai and pywhispercpp
 its dope.
 
 soon:
+
+
 gui
+
 read back pdfs
