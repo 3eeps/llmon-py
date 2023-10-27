@@ -119,31 +119,6 @@ class Client():
                 text = self.voice_to_text()
                 prompt = self.update_chat_template(prompt=text)
             else:               
-                remorse = """November
-                Camille had either been the world's most powerful hurricane or the largest tornado in history. Certainly it had done the job
-                to this oil rig, Kelly thought, donning his tanks for his last dive into the Gulf. The super-structure was wrecked, and all four of
-                the massive legs weakened - twisted like the ruined toy of a gigantic child. Everything that could safely be removed had
-                lready been torched off and lowered by crane onto the barge they were using as their dive base. What remained was a skeletal
-                platform which would soon make a fine home for local game fish, he thought, entering the launch that would take him
-                alongside. The two divers would be working with him, but Kelly was in charge. They went over procedures on the way over
-                while a safety boat circled nervously to keep the local fishermen away. It was foolish of them to be here - the fishing wouldn't
-                be very good for the next few hours - but events like this attracted the curious. And it would be quite a show, Kelly thought
-                with a grin as he rolled backwards off the dive boat."""
-
-                read_back = """Launch ... two, two valid launches, Robin,' Tait warned from the back.
-                'Only two?' the pilot asked.
-                'Maybe he has to pay for them,' Tait suggested coolly. 'I have them at nine. Time to do some pilot magic, Rob.'
-                'Like this?' Zacharias rolled left to keep them in view, pulling into them, and split-S-ing back down. He'd planned it well,
-                ducking behind a ridge. He pulled out at a dangerous low altitude, but the SA-2 Guideline missiles went wild and dumb four
-                thousand feet over his head.
-                'I think it's time,' Tait said.
-                'I think you're right.' Zacharias turned hard left, arming his cluster munitions. The F-105 skimmed over the ridge, dropping
-                back down again while his eyes checked the next ridge, six miles and fifty seconds away.
-                'His radar is still up,' Tait reported. 'He knows we're coming.'
-                'But he's only got one left.' Unless his reload crews are really hot today. Well, you can't allow for everything.
-                'Some light flak at ten o'clock.' It was too far to be a matter of concern, though it did tell him which way out not to take.
-                'There's the plateau.'"""
-
                 prompt = self.update_chat_template(user_prompt)
 
             chat_model_output = chat_model(prompt=prompt) 
