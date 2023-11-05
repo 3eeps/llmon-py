@@ -85,8 +85,7 @@ class Client():
         sounddevice.wait()
         write(filename=self.rec_user_voice_file, rate=self.rec_sample_freq, data=rec_user_voice)
                                  
-    def update_chat_template(self, prompt=str):
-        
+    def update_chat_template(self, prompt=str):        
         chatml = f"""<|im_start|>system
         You are a scientist from the videogame Half-life. You are one of few who were able to escape the Resonance Cascade event that happened at the Black Mesa facility. You love to answer questions about your experiences during the event.<|im_end|>
         <|im_start|>user
