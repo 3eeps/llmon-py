@@ -13,7 +13,8 @@ from scipy.io.wavfile import write
 
 def display_logo():
     color_logo = f"\33[{93}m".format(code=93)
-    print(f"""{color_logo} 
+    print(f"""{color_logo}
+                        llmon-py 
 ⠀⠀⠀⠀⠀⢀⣀⣠⣤⣴⣶⡶⢿⣿⣿⣿⠿⠿⠿⠿⠟⠛⢋⣁⣤⡴⠂⣠⡆⠀
 ⠀⠀⠀⠀⠈⠙⠻⢿⣿⣿⣿⣶⣤⣤⣤⣤⣤⣴⣶⣶⣿⣿⣿⡿⠋⣠⣾⣿⠁⠀
 ⠀⠀⠀⠀⠀⢀⣴⣤⣄⡉⠛⠻⠿⠿⣿⣿⣿⣿⡿⠿⠟⠋⣁⣤⣾⣿⣿⣿⠀⠀
@@ -37,7 +38,7 @@ class Client():
         self.verbose_output = False
 
         self.rec_sample_freq = 44100
-        self.rec_seconds = 8
+        self.rec_seconds = 10
         self.rec_channels = 2
         self.user_file_count = 0
         self.model_file_count = 0
@@ -59,8 +60,8 @@ class Client():
         self.grey  = 90
         self.white = 37
 
-        self.tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device=self.gpu_device)
-        self.stt_model = Model('./stt/ggml-tiny.bin')
+        self.text_ts_model = TTS("text_ts_models/multilingual/multi-dataset/xtts_v2").to(device=self.gpu_device)
+        self.speech_tt_model = Model('./stt/ggml-tiny.bin')
 
     def log_chat(self, user_message=str, model_message=str):
         write_type = 'w'
@@ -80,17 +81,17 @@ class Client():
 
     def create_chat_wav(self, chat_model_text=str):
         self.model_file_count = self.model_file_count + 1
-        self.tts_model.tts_to_file(text=chat_model_text, speaker_wav=self.clone_voice_file, file_path=self.rec_model_output_file, language="en")
+        self.text_ts_model.tts_to_file(text=chat_model_text, speaker_wav=self.clone_voice_file, file_path=self.rec_model_output_file, language="en")
 
     def play_wav(self):
-        wav_filename = f'./model_output{self.file_count}.wav'
+        wav_filename = f'./model_output-{self.model_file_count}.wav'
         wav_object = simpleaudio.WaveObject.from_wave_file(wav_filename)
         play_audio = wav_object.play()
         play_audio.wait_done()
 
     def voice_to_text(self):
         text_data = []
-        user_voice_data = self.stt_model.transcribe(f'./{self.rec_user_voice_file}')
+        user_voice_data = self.speech_tt_model.transcribe(f'./{self.rec_user_voice_file}')
         for voice in user_voice_data:        
             text_data.append(voice.text)
         combined_text = ' '.join(text_data)
@@ -111,7 +112,7 @@ class Client():
         GUEST: {prompt}
         ### Response:"""
         
-        user_assist = f"""USER: You are Art Bell, the radio host from Coast to Coast AM. Your guest tonight claims they are a former scientist from the Black Mesa research facility.
+        user_assist = f"""USER: You are Art Bell, the radio host from the late-night talk show, Coast to Coast AM. Your guest tonight claims to be a theoretical physicist with a remarkable story. He claims to have worked at the top-secret Black Mesa research facility, where he witnessed an unimaginable disaster.
 
         GUEST: {prompt}
         ASSISTANT:"""
@@ -127,7 +128,7 @@ class Client():
         User: {prompt}
         ASSISTANT:"""
 
-        template_type = vicuna
+        template_type = user_assist
         return template_type
 
     def select_models(self):
@@ -165,29 +166,7 @@ class Client():
                 user_voice_prompt = self.voice_to_text()
                 prompt = self.update_chat_template(user_voice_prompt)
             else:  
-                #read_test = """Kelly got the drip coffee machine going, then he pulled on a pair of swim trunks and headed topside. He hadn't forgotten to set the anchor light, he was gratified to see. The sky had cleared off, and the air was cool after the thunderstorms of the previous night. He went forward and was surprised to see that one of his anchors had dragged somewhat. Kelly reproached himself for that, even though nothing had actually gone wrong. The water was a flat, oily calm and the breeze gentle. The pink-orange glow of first light decorated the tree-spotted coastline to the east. All in all, it seemed as fine a morning as he could remember. Then he remembered that what had changed had nothing at all to do with the weather."""
-                test_prompt = """Détails du poste
-                Découvrez en quoi les critères de ce poste correspondent à vos préférences d'emploi.
-                Gérez vos préférences d'emploi à tout moment dans votre profil.
-                Type de poste
-                Temps partiel
-                Avantages
-                Extraits de la description complète du poste
-                Horaires flexibles
-                employé(e) libre service H/F
-                Tu souhaites "rendre la vie plus simple et plus fun" chez Hema?
-
-                N'hésites plus et rejoins nous!
-
-                Nous offrons un poste ou chaque jour est une aventure, ou toi seul définis tes possibilités de carrière et ou ton développement personnel est tout aussi important que celui de notre entreprise.
-
-                Et si c'était toi?
-                Plus qu'un diplôme ou une expérience, c'est ta personnalité et ta motivation qui comptent.
-
-                Tu dois être autonome et polyvalent(e), tu évolues autour d'activités variées (service client, gestion du stock, merchandising…) remplissant ta journée de surprises et de nouveautés !
-
-                Ton esprit d’équipe est indispensable à la réussite de ton magasin !"""
-                prompt = self.update_chat_template(test_prompt)
+                prompt = self.update_chat_template(user_text_prompt)
 
             chat_model_output = chat_model(prompt=prompt) 
             self.log_chat(user_message=user_text_prompt, model_message=chat_model_output['choices'][0]['text'])
