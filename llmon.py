@@ -1,5 +1,6 @@
 # ./codespace/llmon.py
 import os
+
 from TTS.api import TTS 
 from llama_cpp import Llama
 from pywhispercpp.model import Model
@@ -12,9 +13,12 @@ import sounddevice
 from scipy.io.wavfile import write
 
 def display_logo():
+    # when life gives you lemons, you paint that shit gold
+    # thanks https://emojicombos.com/lemon-ascii-art, for the lemon
+    os.system("cls")
     color_logo = f"\33[{93}m".format(code=93)
     print(f"""{color_logo}
-                        llmon-py 
+                        llmon-py
 ⠀⠀⠀⠀⠀⢀⣀⣠⣤⣴⣶⡶⢿⣿⣿⣿⠿⠿⠿⠿⠟⠛⢋⣁⣤⡴⠂⣠⡆⠀
 ⠀⠀⠀⠀⠈⠙⠻⢿⣿⣿⣿⣶⣤⣤⣤⣤⣤⣴⣶⣶⣿⣿⣿⡿⠋⣠⣾⣿⠁⠀
 ⠀⠀⠀⠀⠀⢀⣴⣤⣄⡉⠛⠻⠿⠿⣿⣿⣿⣿⡿⠿⠟⠋⣁⣤⣾⣿⣿⣿⠀⠀
@@ -46,7 +50,7 @@ class Client():
         self.rec_user_voice_file = f'./user_output-{self.user_file_count}.wav'
         self.rec_model_output_file = f'./model_output-{self.model_file_count}.wav'
         self.clone_voice_file = './voices/artbell.mp3'
-        self.log_file = 'chat_history.log'
+        self.log_file = './chat_history.log'
 
         self.new_session = True
         self.chat_template = str                                                                                                                                                                                                                            
@@ -60,7 +64,7 @@ class Client():
         self.grey  = 90
         self.white = 37
 
-        self.text_ts_model = TTS("text_ts_models/multilingual/multi-dataset/xtts_v2").to(device=self.gpu_device)
+        self.text_ts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device=self.gpu_device)
         self.speech_tt_model = Model('./stt/ggml-tiny.bin')
 
     def log_chat(self, user_message=str, model_message=str):
@@ -69,7 +73,7 @@ class Client():
             write_type = 'a'
         self.new_session = False
 
-        output_line = [f'USER: {user_message}', f'model_output{self.model_file_count}.wav: {model_message}']
+        output_line = [f'USER: {user_message}', f'ASSISTANT: {model_message}']
         with open(self.log_file, f'{write_type}') as output_file:
             for message in output_line:
                 output_file.write(message)
@@ -116,12 +120,6 @@ class Client():
 
         GUEST: {prompt}
         ASSISTANT:"""
-
-        chatml = f"""<|im_start|>system
-        You are a scientist from the videogame Half-life. You are one of only a few who were able to escape the resonance cascade event that happened at the Black Mesa facility.<|im_end|>
-        <|im_start|>user
-        {prompt}<|im_end|>
-        <|im_start|>assistant"""
 
         vicuna = f"""You are a virtual assistant with expertise in extracting information from job offers. Your primary task is to respond to user-submitted job offers by extracting key details such as the job title, location, required experience, level of education, type of contract, field, required skills, and salary. You should provide your responses in JSON format, and all responses must be in French.
 
