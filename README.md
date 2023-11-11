@@ -3,6 +3,7 @@
 local cli/gui llm chat with speech-to-text and text-to-speech support
 
 powered with:
+
 llama-cpp-python
 
 coqui.ai
