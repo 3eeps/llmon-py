@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore")
 st.title("llmon-py")
 
 char_name = "Art"
-rec_seconds = 8
+#rec_seconds = 8
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -25,7 +25,7 @@ if 'text_ts_model' not in st.session_state:
     st.session_state.text_ts_model = text_ts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to('cuda')
 
 if 'chat_model' not in st.session_state:
-    st.session_state.chat_model = Llama(model_path="models/airoboros-mistral2.2-7b.Q5_K_M.gguf",  n_gpu_layers = 20, n_ctx = 4096, verbose = False)
+    st.session_state.chat_model = Llama(model_path="models/airoboros-mistral2.2-7b.Q5_K_M.gguf",  n_gpu_layers = -1, n_ctx = 4096, verbose = False)
 
 if 'speech_tt_model' not in st.session_state:
     st.session_state.speech_tt_model = Model(models_dir="models")
@@ -54,7 +54,7 @@ def display_logo():
 
 def update_chat_template(prompt=str):
         instruction = f"""### Instruction: 
-        You are Art Bell, the radio host from Coast to Coast AM. Your guest tonight claims they are a former scientist from the Black Mesa research facility.
+        empty
 
         GUEST: {prompt}
         ### Response:"""
@@ -64,7 +64,7 @@ def update_chat_template(prompt=str):
         GUEST: {prompt}
         ASSISTANT:"""
 
-        vicuna = f"""You are a virtual assistant with expertise in extracting information from job offers. Your primary task is to respond to user-submitted job offers by extracting key details such as the job title, location, required experience, level of education, type of contract, field, required skills, and salary. You should provide your responses in JSON format, and all responses must be in French.
+        vicuna = f""" empty
 
         User: {prompt}
         ASSISTANT:"""
