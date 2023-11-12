@@ -79,8 +79,8 @@ def update_chat_template(prompt=str):
 
 def create_chat_wav(chat_model_text=str):
     character_wav = "voices/hlscientist2.wav"
-    add_text_color = f"\33[{32}m".format(code=32)
-    print(add_text_color)
+    color = f"\33[{32}m".format(code=32)
+    print(color)
     st.session_state.text_ts_model.tts_to_file(text=chat_model_text, speaker_wav=character_wav, file_path='model_output.wav', language="en")
 
 def play_wav():
