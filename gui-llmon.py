@@ -99,7 +99,6 @@ def voice_to_text():
     for voice in user_voice_data:        
         text_data.append(voice.text)
     combined_text = ' '.join(text_data)
-    print(combined_text)
     return combined_text
 
 llmon()
