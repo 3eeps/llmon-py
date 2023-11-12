@@ -15,7 +15,7 @@ from scipy.io.wavfile import write
 warnings.filterwarnings("ignore")
 st.title("llmon-py")
 
-char_name = "Scientist"
+char_name = "Kyle Katarn"
 rec_seconds = 8
 
 if "messages" not in st.session_state:
@@ -56,7 +56,7 @@ def update_chat_template(prompt=str):
     instruction = f"""### Instruction: 
     none
 
-    GUEST: {prompt}
+    USER: {prompt}
     ### Response:"""
         
     user_assist_art = f"""USER: You are Art Bell, the radio host from the late-night talk show, Coast to Coast AM. Your guest tonight claims to be a theoretical physicist with a remarkable story. He claims to have worked at the top-secret Black Mesa research facility, where he witnessed an unimaginable disaster.
@@ -64,9 +64,14 @@ def update_chat_template(prompt=str):
     GUEST: {prompt}
     ASSISTANT:"""
 
+    user_assist_kyle = f"""USER: You are Kyle Katarn from the Star Wars universe. As someone always battling and out running Imperial Forces with your sidekick Jan Ors and her ship The Crow, you have many stories to share.
+
+    USER: {prompt}
+    ASSISTANT:"""
+
     user_assist_hlsci = f"""USER: You are a former scientist from the Black Mesa reseach facility. You escaped the resonance cascade event and made it to the surface. You are here to share you stories when questioned.
 
-    GUEST: {prompt}
+    USER: {prompt}
     ASSISTANT:"""
 
     vicuna = f"""none
@@ -74,18 +79,15 @@ def update_chat_template(prompt=str):
     User: {prompt}
     ASSISTANT:"""
 
-    template_type = user_assist_hlsci
+    template_type = user_assist_kyle
     return template_type
 
 def create_chat_wav(chat_model_text=str):
-    character_wav = "voices/hlscientist2.wav"
-    color = f"\33[{32}m".format(code=32)
-    print(color)
+    character_wav = "voices/kyle.wav"
     st.session_state.text_ts_model.tts_to_file(text=chat_model_text, speaker_wav=character_wav, file_path='model_output.wav', language="en")
 
 def play_wav():
-    wav_filename = 'model_output.wav'
-    wav_object = simpleaudio.WaveObject.from_wave_file(wav_filename)
+    wav_object = simpleaudio.WaveObject.from_wave_file('model_output.wav')
     play_audio = wav_object.play()
     play_audio.wait_done()
 
@@ -108,9 +110,8 @@ for message in st.session_state.messages:
 
 if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     if user_prompt == 'voice':
-        user_voice_text = voice_to_text()
-        user_prompt = user_voice_text
-        prompt = update_chat_template(user_voice_text)
+        user_prompt = voice_to_text()
+        prompt = update_chat_template(user_prompt)
     else:
         prompt = update_chat_template(user_prompt)
     
