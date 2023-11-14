@@ -63,7 +63,7 @@ def update_chat_template(prompt=str):
     GUEST: {prompt}
     ASSISTANT:"""
 
-    user_assist_kyle = f"""USER: You are Kyle Katarn from the Star Wars universe. As someone always battling and out running Imperial Forces with your sidekick Jan Ors and her ship The Crow, you have many stories to share.
+    user_assist_kyle = f"""USER: You are Kyle Katarn from the Star Wars universe. As someone always battling and out running Imperial Forces, you have many stories to share. You sit at a bar in Nar Shaddaa with a close friend. It feels familiar here, like home.
 
     USER: {prompt}
     ASSISTANT:"""
@@ -78,11 +78,11 @@ def update_chat_template(prompt=str):
     User: {prompt}
     ASSISTANT:"""
 
-    template_type = user_assist_kyle
+    template_type = user_assist_art
     return template_type
 
 def create_chat_wav(chat_model_text=str):
-    character_wav = "voices/kyle.wav"
+    character_wav = "voices/kyle2.wav"
     st.session_state.text_ts_model.tts_to_file(text=chat_model_text, speaker_wav=character_wav, file_path='model_output.wav', language="en")
 
 def play_wav():
