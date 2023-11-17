@@ -5,7 +5,6 @@ import time
 import warnings
 import streamlit as st
 from threading import Thread
-from nltk.tokenize import sent_tokenize
 
 import torch
 from TTS.tts.configs.xtts_config import XttsConfig
@@ -38,7 +37,7 @@ if 'config' not in st.session_state:
 gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=["./voices/cortana.wav"])
 
 if 'chat_model' not in st.session_state:
-    st.session_state.chat_model = Llama(model_path="models/python-code-13b.Q6_K.gguf",  n_batch=1024, n_gpu_layers = 32, n_ctx = 4096, verbose = False)
+    st.session_state.chat_model = Llama(model_path="models/python-code-13b.Q6_K.gguf", n_threads=12, n_threads_batch=12, n_gpu_layers = 38, n_ctx = 4096, verbose = False)
 
 if 'speech_tt_model' not in st.session_state:
     st.session_state.speech_tt_model = Model(models_dir="models")
@@ -64,12 +63,13 @@ class AudioStream(Thread):
         self.start()
 
     def run(self):
-        time.sleep(2.0)
+        time.sleep(1.0)
         while not self.stopped:
             try:
                 wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.count}.wav")
                 play_audio = wav_object.play()
                 play_audio.wait_done()
+                os.remove(f"xtts_stream{self.count}.wav")
                 self.count = self.count + 1 
             except:
                 self.stopped = True
@@ -136,19 +136,13 @@ def update_chat_template(prompt=str):
 
 def wav_by_chunk(chunks):
     wav_chunks = []
-    stream_full = []
     for i, chunk in enumerate(chunks):
         wav_chunks.append(chunk)
-        stream_full.append(chunk)
         wav = torch.cat(wav_chunks, dim=0)
         torchaudio.save(f"xtts_stream{i}.wav", wav.squeeze().unsqueeze(0).cpu(), sample_rate=24000, encoding="PCM_S", bits_per_sample=16)
-        #0 is fastest to hearing first chunk
-        if i == 0:
-            play_chunks = AudioStream()
+        if i == 1:
+            AudioStream()
         wav_chunks = []
-
-    wav = torch.cat(stream_full, dim=0)
-    torchaudio.save("xtts_stream_full.wav", wav.squeeze().unsqueeze(0).cpu(), sample_rate=24000, encoding="PCM_S", bits_per_sample=16)
 
 def voice_to_text():
     rec_user_voice = sounddevice.rec(int(rec_seconds * 44100), samplerate=44100, channels=2)
@@ -161,6 +155,16 @@ def voice_to_text():
         text_data.append(voice.text)
     combined_text = ' '.join(text_data)
     return combined_text
+
+def extract_words_before_set(sentence, target_set):
+    words = sentence.split()
+    result = []
+    for word in words:
+        if target_set in word:
+            break
+        result.append(word)
+
+    return ' '.join(result)
 
 llmon()
 for message in st.session_state.messages:
@@ -178,7 +182,7 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
         st.markdown(user_prompt)
     st.session_state.messages.append({"role": "user", "content": f'User: {user_prompt}'})
 
-    model_output = st.session_state.chat_model(prompt=prompt)
+    model_output = st.session_state.chat_model(prompt=prompt, max_tokens=2048)
     model_response = f"{char_name}: {model_output['choices'][0]['text']}"
     print(model_output)    
     with st.chat_message("assistant"):
@@ -186,11 +190,9 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     st.session_state.messages.append({"role": "assistant", "content": model_response})
         
     if code_model:
-        sentence_list = []
-        sentence_list = sent_tokenize(model_output['choices'][0]['text'])
-        print(f'sent to tts: {sentence_list[0]}')
-        first_sentence_only = st.session_state.model.inference_stream(sentence_list[0], "en", gpt_cond_latent, speaker_embedding)
-        wav_by_chunk(first_sentence_only)
+        first_paragraph = extract_words_before_set(sentence=model_output['choices'][0]['text'], target_set='```')
+        send_only_paragraph = st.session_state.model.inference_stream(first_paragraph, "en", gpt_cond_latent, speaker_embedding, stream_chunk_size=40)
+        wav_by_chunk(send_only_paragraph)
     else:
-        chunk_inference = st.session_state.model.inference_stream(model_output['choices'][0]['text'], "en", gpt_cond_latent, speaker_embedding, stream_chunk_size=80)
+        chunk_inference = st.session_state.model.inference_stream(model_output['choices'][0]['text'], "en", gpt_cond_latent, speaker_embedding, stream_chunk_size=40)
         wav_by_chunk(chunk_inference)
