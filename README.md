@@ -1,6 +1,6 @@
 # llmon-:pie:
 
-local cli/gui llm chat with speech-to-text and text-to-speech support
+local cli/web-ui llm chat with speech-to-text and text-to-speech support
 
 uses llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
 
