@@ -6,4 +6,5 @@ uses llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
 
 streamlit run home.py 
 
-![image](https://github.com/3eeps/llmon-py/assets/55860052/7437fbba-eb9e-4264-b0e6-21e813d0cc4a)
+![image](https://github.com/3eeps/llmon-py/assets/55860052/47f3049c-0255-4cee-9ffb-5b69aeb3c630)
+
