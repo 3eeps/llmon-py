@@ -9,7 +9,6 @@ from llama_cpp import Llama
 from pywhispercpp.model import Model
 
 import readchar
-#from nltk.tokenize import sent_tokenize
 
 import simpleaudio
 import sounddevice 
@@ -19,12 +18,9 @@ import GPUtil
 from threading import Thread
 import time
 
-# sorry, getting too many warnings from all this ai jazz
 warnings.filterwarnings("ignore")
 
 def display_logo():
-    # when life gives you lemons, you paint that shit gold
-    # thanks https://emojicombos.com/lemon-ascii-art, for the lemon
     os.system("cls")
     color_logo = f"\33[{93}m".format(code=93)
     print(f"""{color_logo}
