@@ -1,3 +1,5 @@
+# ./codespace/home.py
+
 import os
 import streamlit as st
 
@@ -25,9 +27,11 @@ if 'settings' not in st.session_state:
 
     model_avatar_img = '🤖'
     user_avatar_img = '🙅'
+    voice_word = 'voice'
                                                    
     template_select = st.selectbox('chat template', ['ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci'])
     enable_code_voice = st.selectbox('coding mode', ['no', 'yes'])
+    voice_word = st.selectbox('start mic word', ['default', 'talk', 'vc', 'stt'])
     user_avatar_img = st.selectbox('user avatar', ['🙅', '🤖', '😈', '🗿', '💩', '💀', '👾', '👽', '👤', '🎅'])
     model_avatar_img = st.selectbox('model avatar', ['🤖', '🙅', '😈', '🗿', '💩', '💀', '👾', '👽', '👤', '🎅'])
     st.header('advanced')
@@ -53,6 +57,7 @@ if 'settings' not in st.session_state:
     if max_context  == 'default':
         max_context  = 4096
 
+    st.session_state.voice_word = voice_word
     st.session_state.verbose_chat = chat_verbose 
     st.session_state.model_select = model_select
     st.session_state.char_name = character_name
