@@ -1,4 +1,4 @@
-# ./codespace/llmon-gui.py
+# ./codespace/pages/chat window.py
 
 import os
 import time
@@ -44,6 +44,7 @@ stream_chunk_size = st.session_state.stream_chunk_size
 warmup_chunk_size = 20
 warmup_string = 'warmup string'
 language = 'en'
+voice_enable_word = st.session_state.voice_word
 dim = 0
 
 gpu_layers = st.session_state.gpu_layer_count
@@ -209,7 +210,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 if user_prompt := st.chat_input(f"Send a message to {char_name}"):
-    if user_prompt == 'voice':
+    if user_prompt == f'{voice_enable_word}':
         user_prompt = voice_to_text()
         prompt = update_chat_template(prompt=user_prompt, template_type=current_template)
     else:
