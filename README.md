@@ -1,7 +1,5 @@
 # 🍋llmon-py
 
-wip
-
 local webui for inference with local gguf llms. supports tts and sst
 
 uses llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
