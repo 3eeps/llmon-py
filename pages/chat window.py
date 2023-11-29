@@ -214,9 +214,9 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     else:
         prompt = update_chat_template(prompt=user_prompt, template_type=current_template)
     
-    with st.chat_message("User", avatar=user_avatar):
+    with st.chat_message("user", avatar=user_avatar):
         st.markdown(user_prompt)
-    st.session_state.messages.append({"role": "user", "content": f'User: {user_prompt}'})
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
 
     # models turn to shine
     model_output = st.session_state.chat_model(prompt=prompt, max_tokens=max_prompt_context)
@@ -224,8 +224,6 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     print(model_output)
 
     with st.chat_message("assistant", avatar=chat_model_avatar):
-        #st.markdown(model_stream)
-        #st.session_state.messages.append(stream_write(stream_text(model_response)))
         st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
     
     if st.session_state.enable_voice == 'yes':
