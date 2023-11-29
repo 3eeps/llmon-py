@@ -5,6 +5,7 @@ import time
 import warnings
 import streamlit as st
 from threading import Thread
+from streamlit_extras.streaming_write import write as stream_write
 
 import torch
 from TTS.tts.configs.xtts_config import XttsConfig
@@ -20,6 +21,7 @@ from scipy.io.wavfile import write
 st.title("🍋llmon-py")
 warnings.filterwarnings("ignore")
 
+# init it all
 code_model = st.session_state.enable_code_voice
 chat_verbose = st.session_state.verbose_chat
 chat_max_context = st.session_state.max_context
@@ -28,7 +30,7 @@ user_avatar = st.session_state.user_avatar
 chat_model_avatar = st.session_state.model_avatar
 chat_threads = st.session_state.cpu_core_count
 chat_batch_threads = st.session_state.cpu_batch_count
-torch_audio_threads = 8
+torch_audio_threads = st.session_state.torch_audio_cores
 chunk_buffer = st.session_state.chunk_buffer
 sample_rate = 44100
 chunk_sample_rate = 24000
@@ -43,25 +45,25 @@ code_stream_chunk_size = 40
 stream_chunk_size = st.session_state.stream_chunk_size
 warmup_chunk_size = 20
 warmup_string = 'warmup string'
-language = 'en'
+language = st.session_state.model_language
 voice_enable_word = st.session_state.voice_word
 dim = 0
 
 gpu_layers = st.session_state.gpu_layer_count
 char_name = st.session_state.char_name
-rec_seconds = 8
+rec_seconds = st.session_state.user_audio_length
 torch.set_num_threads(torch_audio_threads)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if 'config' not in st.session_state:
-    st.text('loading models...')
     st.session_state.config = XttsConfig()
     st.session_state.config.load_json("./xtts_config/config.json")
     st.session_state.model = Xtts.init_from_config(st.session_state.config)
     st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./xtts_config")
-    st.session_state.model.cuda()
+    if st.session_state.audio_cuda_or_cpu == 'cuda':
+        st.session_state.model.cuda()
 
 gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{voice_path}"])
 
@@ -72,20 +74,8 @@ if 'chat_model' not in st.session_state:
 if 'speech_tt_model' not in st.session_state:
     st.session_state.speech_tt_model = Model(models_dir=speech_model_path)
 
-class AudioThread(Thread):
-    def __init__(self):
-        super(AudioThread, self).__init__()
-        self.stop_thread = False
-        self.start()
-
-    def run(self):
-        while not self.stop_thread:
-            wav_object = simpleaudio.WaveObject.from_wave_file('input.wav')
-            play_audio = wav_object.play()
-            play_audio.wait_done()
-            self.stop_thread = True
-
 class AudioStream(Thread):
+    # when called, plays our chunked .wav files and then removes them using a seperate thread
     def __init__(self):
         super(AudioStream, self).__init__()
         self.stop_thread = False
@@ -128,6 +118,7 @@ def llmon():
 
 def update_chat_template(prompt=str, template_type=str):
     template = template_type
+
     if template_type == 'ajibawa_python':
         ajibawa_python = f"""This is a conversation with your helpful AI assistant. AI assistant can generate Python Code along with necessary explanation.
 
@@ -194,21 +185,28 @@ def voice_to_text():
     combined_text = ' '.join(text_data)
     return combined_text
 
-def extract_words_before_set(sentence, target_set):
+def get_paragraph_before_code(sentence, stop_word):
     words = sentence.split()
     result = []
     for word in words:
-        if target_set in word:
+        if stop_word in word:
             break
         result.append(word)
-
     return ' '.join(result)
+
+def stream_text(text=str):
+    for word in text.split():
+        yield word + " "
+        if st.session_state.text_stream_speed != 0:
+            speed = (st.session_state.text_stream_speed / 10)
+            time.sleep(speed)
 
 llmon()
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# user input of some form will happen here, we combine user input with the prompt template
 if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     if user_prompt == f'{voice_enable_word}':
         user_prompt = voice_to_text()
@@ -216,21 +214,28 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     else:
         prompt = update_chat_template(prompt=user_prompt, template_type=current_template)
     
-    with st.chat_message("User", avatar="🙅"):
+    with st.chat_message("User", avatar=user_avatar):
         st.markdown(user_prompt)
     st.session_state.messages.append({"role": "user", "content": f'User: {user_prompt}'})
 
+    # models turn to shine
     model_output = st.session_state.chat_model(prompt=prompt, max_tokens=max_prompt_context)
     model_response = f"{char_name}: {model_output['choices'][0]['text']}"
-    print(model_output)    
-    with st.chat_message("assistant", avatar="🤖"):
-        st.markdown(model_response)
-    st.session_state.messages.append({"role": "assistant", "content": model_response})
-        
-    if code_model == 'yes':
-        first_paragraph = extract_words_before_set(sentence=model_output['choices'][0]['text'], target_set='```')
-        send_only_paragraph = st.session_state.model.inference_stream(first_paragraph, "en", gpt_cond_latent, speaker_embedding, stream_chunk_size=code_stream_chunk_size)
-        wav_by_chunk(send_only_paragraph)
-    else:
-        chunk_inference = st.session_state.model.inference_stream(model_output['choices'][0]['text'], "en", gpt_cond_latent, speaker_embedding, stream_chunk_size=stream_chunk_size)
-        wav_by_chunk(chunk_inference)
+    print(model_output)
+
+    with st.chat_message("assistant", avatar=chat_model_avatar):
+        #st.markdown(model_stream)
+        #st.session_state.messages.append(stream_write(stream_text(model_response)))
+        st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
+    
+    if st.session_state.enable_voice == 'yes':
+        # for code inference, lets only create audio with the first paragraph
+        if code_model == 'yes':
+            first_paragraph = get_paragraph_before_code(sentence=model_output['choices'][0]['text'], stop_word='```')
+            send_only_paragraph = st.session_state.model.inference_stream(first_paragraph, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=code_stream_chunk_size)
+            wav_by_chunk(send_only_paragraph)
+
+        # normal streaming for other models
+        else:
+            chunk_inference = st.session_state.model.inference_stream(model_output['choices'][0]['text'], language, gpt_cond_latent, speaker_embedding, stream_chunk_size=stream_chunk_size)
+            wav_by_chunk(chunk_inference)
