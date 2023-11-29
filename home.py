@@ -39,7 +39,6 @@ if 'settings' not in st.session_state:
     st.session_state.audio_cuda_or_cpu = st.selectbox('inference to', ["cuda", "cpu"])
     st.header('advanced')
     verbose_chat = st.selectbox('verbose mode', ['no', 'yes'])
-    # eanble voice on or off soon plz :)
     user_audio_length = st.slider("mic rec time(sec)", 2, 25, 8)
     max_prompt_context = st.selectbox('max token gen', ['default', '256', '512', '1024', '1536', '2048', '4096', '8096', '16384', '32768'])
     max_context = st.selectbox('max context size', ['default', '4096', '8096', '16384', '32768'])
@@ -91,5 +90,3 @@ if 'settings' not in st.session_state:
     st.session_state.config_set = True
     st.session_state.cpu_core_count = cpu_core_count
     st.session_state.cpu_batch_count = cpu_batch_count
-
-    
