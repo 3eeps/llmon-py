@@ -16,7 +16,7 @@ from pywhispercpp.model import Model
 import torchaudio
 import simpleaudio
 import sounddevice 
-from scipy.io.wavfile import write
+from scipy.io.wavfile import write as write_wav
 
 st.title("🍋llmon-py")
 warnings.filterwarnings("ignore")
@@ -176,7 +176,7 @@ def wav_by_chunk(chunks):
 def voice_to_text():
     rec_user_voice = sounddevice.rec(int(rec_seconds * sample_rate), samplerate=sample_rate, channels=channels)
     sounddevice.wait()
-    write(filename='user_output.wav', rate=sample_rate, data=rec_user_voice)
+    write_wav(filename='user_output.wav', rate=sample_rate, data=rec_user_voice)
 
     text_data = []
     user_voice_data = st.session_state.speech_tt_model.transcribe('user_output.wav')
