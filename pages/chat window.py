@@ -3,8 +3,9 @@
 import os
 import time
 import warnings
-import streamlit as st
 from threading import Thread
+
+import streamlit as st
 from streamlit_extras.streaming_write import write as stream_write
 
 import torch
@@ -19,9 +20,14 @@ import sounddevice
 from scipy.io.wavfile import write as write_wav
 
 st.title("🍋llmon-py")
+# keep console clean
 warnings.filterwarnings("ignore")
 
-# init it all
+# init
+model_path = f"./models/{st.session_state.model_select}"
+voice_path = f"./voices/{st.session_state.voice_select}"
+
+char_name = st.session_state.char_name
 code_model = st.session_state.enable_code_voice
 chat_verbose = st.session_state.verbose_chat
 chat_max_context = st.session_state.max_context
@@ -30,29 +36,27 @@ user_avatar = st.session_state.user_avatar
 chat_model_avatar = st.session_state.model_avatar
 chat_threads = st.session_state.cpu_core_count
 chat_batch_threads = st.session_state.cpu_batch_count
-torch_audio_threads = st.session_state.torch_audio_cores
-chunk_buffer = st.session_state.chunk_buffer
-sample_rate = 44100
-chunk_sample_rate = 24000
-channels = 2
 max_prompt_context = st.session_state.context_max_prompt
+chunk_buffer = st.session_state.chunk_buffer
+stream_chunk_size = st.session_state.stream_chunk_size
+voice_enable_word = st.session_state.voice_word
+gpu_layers = st.session_state.gpu_layer_count
+rec_seconds = st.session_state.user_audio_length
+torch_audio_threads = st.session_state.torch_audio_cores
+torch.set_num_threads(torch_audio_threads)
+language = st.session_state.model_language
+
+speech_model_path = 'models'
+warmup_string = 'warmup string'
 bits_per_sample = 16
 encoding_type = 'PCM_S'
-model_path = f"./models/{st.session_state.model_select}"
-voice_path = f"./voices/{st.session_state.voice_select}"
-speech_model_path = 'models'
 code_stream_chunk_size = 40
-stream_chunk_size = st.session_state.stream_chunk_size
 warmup_chunk_size = 20
-warmup_string = 'warmup string'
-language = st.session_state.model_language
-voice_enable_word = st.session_state.voice_word
+sample_rate = 44100
+chunk_sample_rate = 24000
+xtts_max_token_count = 400
+channels = 2
 dim = 0
-
-gpu_layers = st.session_state.gpu_layer_count
-char_name = st.session_state.char_name
-rec_seconds = st.session_state.user_audio_length
-torch.set_num_threads(torch_audio_threads)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -68,14 +72,14 @@ if 'config' not in st.session_state:
 gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{voice_path}"])
 
 if 'chat_model' not in st.session_state:
-    st.session_state.warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
+    warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
     st.session_state.chat_model = Llama(model_path=model_path, n_threads=chat_threads, n_threads_batch=chat_batch_threads, n_gpu_layers = gpu_layers, n_ctx = chat_max_context, verbose = chat_verbose)
 
 if 'speech_tt_model' not in st.session_state:
     st.session_state.speech_tt_model = Model(models_dir=speech_model_path)
 
 class AudioStream(Thread):
-    # when called, plays our chunked .wav files and then removes them using a seperate thread
+    # when called, play our chunked .wav files and then remove them using a seperate thread. thread stops when no .wav files found
     def __init__(self):
         super(AudioStream, self).__init__()
         self.stop_thread = False
@@ -206,29 +210,35 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# user input of some form will happen here, we combine user input with the prompt template
+# we combine user input (audio/text) with the prompt template
 if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     if user_prompt == f'{voice_enable_word}':
         user_prompt = voice_to_text()
-        prompt = update_chat_template(prompt=user_prompt, template_type=current_template)
-    else:
-        prompt = update_chat_template(prompt=user_prompt, template_type=current_template)
+    prompt = update_chat_template(prompt=user_prompt, template_type=current_template)
     
+    # display user message and keep it in session state
     with st.chat_message("user", avatar=user_avatar):
         st.markdown(user_prompt)
-        st.session_state.messages.append({"role": "user", "content": user_prompt})
+    st.session_state.messages.append({"role": "user", "content": user_prompt})
 
     # models turn to shine
     model_output = st.session_state.chat_model(prompt=prompt, max_tokens=max_prompt_context)
     model_response = f"{char_name}: {model_output['choices'][0]['text']}"
     print(model_output)
 
+    # display model message and keep it in session state, if code model used, lets make it pretty
     with st.chat_message("assistant", avatar=chat_model_avatar):
-        st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
+        if code_model == "yes":
+            st.markdown(model_response)
+            st.session_state.messages.append({"role": "assistant", "content": model_response})
+        else:
+            st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
     
-    if st.session_state.enable_voice == 'yes':
+    xtts_max_tokens = model_output['usage']['total_tokens']
+    xtts_max_tokens_int = int(xtts_max_tokens)
+    if st.session_state.enable_voice == 'yes' and xtts_max_tokens_int < xtts_max_token_count:
         # for code inference, lets only create audio with the first paragraph
-        if code_model == 'yes':
+        if code_model == 'yes' :
             first_paragraph = get_paragraph_before_code(sentence=model_output['choices'][0]['text'], stop_word='```')
             send_only_paragraph = st.session_state.model.inference_stream(first_paragraph, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=code_stream_chunk_size)
             wav_by_chunk(send_only_paragraph)
