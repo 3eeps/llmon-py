@@ -2,7 +2,9 @@
 
 local webui for inference with local gguf llms. supports tts and sst
 
-uses llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
+made to be modified and learned from. great starting point.
+
+uses pytorch, llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
 
 to launch: streamlit run x:\filedir\home.py 
 
