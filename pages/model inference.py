@@ -1,9 +1,10 @@
-# ./codespace/pages/chat window.py
+# ./codespace/pages/model inference.py
 
 # streamlit
 import streamlit as st
 from streamlit_extras.streaming_write import write as stream_write
 
+# setup page style
 st.set_page_config(
     page_title="llmon-py",
     page_icon="🍋",
@@ -23,6 +24,7 @@ from TTS.tts.configs.xtts_config import XttsConfig
 from TTS.tts.models.xtts import Xtts 
 from llama_cpp import Llama
 from pywhispercpp.model import Model
+
 # audio
 import torchaudio
 import simpleaudio
@@ -81,40 +83,32 @@ def stream_text(text=str):
 
 def popup_note(message=str, delay=int):
     if st.session_state.enable_popups == 'yes':
-        st.toast(message, icon='🍋')
+        st.toast(message)
         time.sleep(delay)
-
-with st.sidebar:
-    st.session_state.note_pad = st.text_area('📝notepad')
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if 'config' not in st.session_state and st.session_state.enable_voice == 'yes':
-    popup_note(message='loading tts model...', delay=1.0)
+    popup_note(message='👋 saying hello to the tts model...', delay=1.0)
     st.session_state.config = XttsConfig()
     st.session_state.config.load_json("./xtts_config/config.json")
     st.session_state.model = Xtts.init_from_config(st.session_state.config)
     st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./xtts_config")
     if st.session_state.audio_cuda_or_cpu == 'cuda':
         st.session_state.model.cuda()
-    popup_note(message='tts model loaded!', delay=1.0)
-
+        
 if st.session_state.enable_voice == 'yes':
     gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{chat_model_voice_path}"])
+    # get the first inference out of the way
+    st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
 
 if 'chat_model' not in st.session_state:
-    popup_note(message='warming up tts model...', delay=1.0)
-    # get the first inference out of the way
-    if st.session_state.enable_voice == 'yes':
-        warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
-    popup_note(message='waking up chat model...', delay=1.0)
+    popup_note(message='😴 waking up chat model...', delay=1.0)
     st.session_state.chat_model = Llama(model_path=chat_model_path, n_batch=batch_count, n_threads=chat_threads, n_threads_batch=chat_batch_threads, n_gpu_layers = gpu_layers, n_ctx = chat_max_context, verbose = chat_verbose)
-    popup_note(message=f'{st.session_state.model_select} loaded!', delay=1.0)
 
-if 'speech_tt_model' not in st.session_state:
-    st.session_state.speech_tt_model = Model(models_dir=speech_model_path)
-    popup_note(message='stt model loaded', delay=1.0)
+if 'speech_tt_model' not in st.session_state and st.session_state.enable_voice == 'yes':
+    st.session_state.speech_tt_model = Model(models_dir=speech_model_path)  
 
 class AudioStream(Thread):
     # when called, play our chunked .wav files and then remove them using a seperate thread. thread stops when no .wav files found
@@ -137,9 +131,40 @@ class AudioStream(Thread):
                 self.iter = 0
                 self.stop_thread = True
 
+class AudioStream(Thread):
+    # when called, play our chunked .wav files and then remove them using a seperate thread. thread stops when no .wav files found
+    def __init__(self):
+        super(AudioStream, self).__init__()
+        self.stop_thread = False
+        self.iter = 0
+        self.start()
+
+    def run(self):
+        time.sleep(1.0)
+        while not self.stop_thread:
+            try:    
+                wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.iter}.wav")
+                play_audio = wav_object.play()
+                play_audio.wait_done()
+                os.remove(f"xtts_stream{self.iter}.wav")
+                self.iter = self.iter + 1
+            except:
+                self.iter = 0
+                self.stop_thread = True
+
+class TextStream(Thread):
+    def __init__(self, text=str):
+        super(TextStream, self).__init__()
+        self.stop_thread = False
+        self.text = text
+        self.start()
+
+    def run(self):
+        while not self.stop_thread:
+            stream_write(stream_text(self.text))
+            self.stop_thread = True
+
 def llmon():
-    # when life gives you lemons, you paint that shit gold
-    # https://emojicombos.com/lemon-ascii-art
     os.system("cls")
     color_logo = f"\33[{93}m".format(code=93)
     print(f"""{color_logo}
@@ -161,6 +186,28 @@ def llmon():
 
 def update_chat_template(prompt=str, template_type=str):
     template = template_type
+
+    if template_type == "vicuna_based":
+        vicuna_based = f"""You are an AI who shares your opinions, thoughts, and feelings. You enjoy hanging out and discussing any topic.
+
+        USER: {prompt}
+        ASSISTANT:"""
+        template = vicuna_based
+
+    if template_type == 'user_assist_duke':
+        user_assist_duke = f"""USER: Imagine you're Duke Nukem, the badass one-liner-spouting hero from the video game series Duke Nukem 3D. You're sitting down with the USER to have a conversation. 
+
+        USER: {prompt}
+        ASSISTANT:"""
+        template = user_assist_duke
+
+    if template_type == 'user_assist_rick':
+        user_assist_rick = f"""USER: Imagine you're the genius, eccentric, and slightly cynical scientist Rick from Rick and Morty. You have just jumped through a portal to sit down and have a conversation about what you have been up to in your garage.
+
+        USER: {prompt}
+        ASSISTANT:"""
+        template = user_assist_rick
+
 
     if template_type == 'ajibawa_python':
         ajibawa_python = f"""This is a conversation with your helpful AI assistant. AI assistant can generate Python Code along with necessary explanation.
@@ -203,6 +250,7 @@ def update_chat_template(prompt=str, template_type=str):
     return template
 
 def wav_by_chunk(chunks):
+    popup_note(message='generating audio...', delay=1.0)
     wav_chunks = []
     stream_chunks = []
     for i, chunk in enumerate(chunks):
@@ -237,6 +285,9 @@ def get_paragraph_before_code(sentence, stop_word):
         result.append(word)
     return ' '.join(result)
 
+with st.sidebar:
+    st.text_area('📝notepad')
+
 llmon()
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -264,14 +315,11 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     with st.chat_message("assistant", avatar=chat_model_avatar):
         if code_model == "yes":
             st.markdown(model_response)
-            #st.session_state.messages.append({"role": "assistant", "content": model_response})
         else:
             stream_response = model_response
             model_response = stream_write(stream_text(stream_response))
-            #st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
     st.session_state.messages.append({"role": "assistant", "content": model_response})
     
-    popup_note(message='generating audio...', delay=1.0)
     xtts_max_tokens = model_output['usage']['total_tokens']
     xtts_max_tokens_int = int(xtts_max_tokens)
     if st.session_state.enable_voice == 'yes' and xtts_max_tokens_int < xtts_max_token_count:
