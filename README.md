@@ -1,6 +1,6 @@
 # 🍋llmon-py
 
-local webui for inference with local *.gguf llms. supports stt-model-tts
+local webui for inference with local .gguf models. supports stt-model-tts
 
 made to be modified and learned from. great starting point.
 
