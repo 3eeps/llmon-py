@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 import os
 
 st.set_page_config(
@@ -24,6 +23,7 @@ voice_box_data = scan_dir('voices')
 
 if 'settings' not in st.session_state:
     llmon_config = st.form('setup')
+
     tab1, tab2, tab3 = st.tabs(["audio", "chat model", "advanced"])
     
     with tab1:
@@ -57,8 +57,8 @@ if 'settings' not in st.session_state:
         st.session_state.cpu_batch_count = st.slider('cpu batch cores', 1, 128, 12)
         st.session_state.stream_chunk_size = st.slider('stream chunk size', 20, 200, 40)
         st.session_state.chunk_buffer = st.slider('chunk buffers', 0, 2, 1)
-   
-    submit_config_button = llmon_config.form_submit_button('save current')
+        
+    submit_config_button = llmon_config.form_submit_button('save setup')
      
     if st.session_state.verbose_chat == 'yes':
         st.session_state.verbose_chat = True
