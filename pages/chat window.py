@@ -1,50 +1,67 @@
 # ./codespace/pages/chat window.py
 
+# streamlit
+import streamlit as st
+from streamlit_extras.streaming_write import write as stream_write
+
+st.set_page_config(
+    page_title="llmon-py",
+    page_icon="🍋",
+    layout="wide",
+    initial_sidebar_state="expanded")
+st.title("🍋llmon-py")
+
+# os/general
 import os
 import time
 import warnings
 from threading import Thread
 
-import streamlit as st
-from streamlit_extras.streaming_write import write as stream_write
-
+# models
 import torch
 from TTS.tts.configs.xtts_config import XttsConfig
 from TTS.tts.models.xtts import Xtts 
 from llama_cpp import Llama
 from pywhispercpp.model import Model
-
+# audio
 import torchaudio
 import simpleaudio
 import sounddevice 
 from scipy.io.wavfile import write as write_wav
 
-st.title("🍋llmon-py")
-# keep console clean
-warnings.filterwarnings("ignore")
+def popup_note(message=str, delay=int):
+    st.toast(message)
+    time.sleep(delay)
 
-# init
-model_path = f"./models/{st.session_state.model_select}"
-voice_path = f"./voices/{st.session_state.voice_select}"
+if 'system_messages' not in st.session_state:
+    popup_note(message='imports loaded', delay=1.0)
 
+# chat model
+chat_model_path = f"./models/{st.session_state.model_select}"
+chat_model_voice_path = f"./voices/{st.session_state.voice_select}"
 char_name = st.session_state.char_name
 code_model = st.session_state.enable_code_voice
-chat_verbose = st.session_state.verbose_chat
-chat_max_context = st.session_state.max_context
 current_template = st.session_state.template_select
 user_avatar = st.session_state.user_avatar
 chat_model_avatar = st.session_state.model_avatar
+# chat settings
+text_stream_speed = st.session_state.text_stream_speed
+chat_verbose = st.session_state.verbose_chat
+chat_max_context = st.session_state.max_context
 chat_threads = st.session_state.cpu_core_count
 chat_batch_threads = st.session_state.cpu_batch_count
 max_prompt_context = st.session_state.context_max_prompt
+# gpu/cuda
+gpu_layers = st.session_state.gpu_layer_count
+# audio
+torch_audio_threads = st.session_state.torch_audio_cores
+torch.set_num_threads(torch_audio_threads)
+rec_seconds = st.session_state.user_audio_length
 chunk_buffer = st.session_state.chunk_buffer
 stream_chunk_size = st.session_state.stream_chunk_size
 voice_enable_word = st.session_state.voice_word
-gpu_layers = st.session_state.gpu_layer_count
-rec_seconds = st.session_state.user_audio_length
-torch_audio_threads = st.session_state.torch_audio_cores
-torch.set_num_threads(torch_audio_threads)
 language = st.session_state.model_language
+enable_console_warnings = st.session_state.console_warnings
 
 speech_model_path = 'models'
 warmup_string = 'warmup string'
@@ -58,25 +75,47 @@ xtts_max_token_count = 400
 channels = 2
 dim = 0
 
+# keep console clean
+warnings.filterwarnings(enable_console_warnings)
+
+def stream_text(text=str):
+    for word in text.split():
+        yield word + " "
+        if st.session_state.text_stream_speed != 0:
+            speed = (st.session_state.text_stream_speed / 10)
+            time.sleep(speed)
+
+with st.sidebar:
+    st.session_state.note_pad = st.text_area('notes')
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if 'config' not in st.session_state:
+if 'config' not in st.session_state and st.session_state.enable_voice == 'yes':
+    popup_note(message='loading tts model...', delay=1.0)
     st.session_state.config = XttsConfig()
     st.session_state.config.load_json("./xtts_config/config.json")
     st.session_state.model = Xtts.init_from_config(st.session_state.config)
     st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./xtts_config")
     if st.session_state.audio_cuda_or_cpu == 'cuda':
         st.session_state.model.cuda()
+    popup_note(message='tts model loaded!', delay=1.0)
 
-gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{voice_path}"])
+if st.session_state.enable_voice == 'yes':
+    gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{chat_model_voice_path}"])
 
 if 'chat_model' not in st.session_state:
-    warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
-    st.session_state.chat_model = Llama(model_path=model_path, n_threads=chat_threads, n_threads_batch=chat_batch_threads, n_gpu_layers = gpu_layers, n_ctx = chat_max_context, verbose = chat_verbose)
+    popup_note(message='warning up tts model...', delay=1.0)
+    # get the first inference out of the way
+    if st.session_state.enable_voice == 'yes':
+        warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
+    popup_note(message='waking up chat model...', delay=1.0)
+    st.session_state.chat_model = Llama(model_path=chat_model_path, n_threads=chat_threads, n_threads_batch=chat_batch_threads, n_gpu_layers = gpu_layers, n_ctx = chat_max_context, verbose = chat_verbose)
+    popup_note(message=f'{st.session_state.model_select} loaded!', delay=1.0)
 
 if 'speech_tt_model' not in st.session_state:
     st.session_state.speech_tt_model = Model(models_dir=speech_model_path)
+    popup_note(message='stt model loaded', delay=1.0)
 
 class AudioStream(Thread):
     # when called, play our chunked .wav files and then remove them using a seperate thread. thread stops when no .wav files found
@@ -89,13 +128,14 @@ class AudioStream(Thread):
     def run(self):
         time.sleep(1.0)
         while not self.stop_thread:
-            try:
+            try:    
                 wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.iter}.wav")
                 play_audio = wav_object.play()
                 play_audio.wait_done()
                 os.remove(f"xtts_stream{self.iter}.wav")
-                self.iter = self.iter + 1 
+                self.iter = self.iter + 1
             except:
+                self.iter = 0
                 self.stop_thread = True
 
 def llmon():
@@ -198,13 +238,6 @@ def get_paragraph_before_code(sentence, stop_word):
         result.append(word)
     return ' '.join(result)
 
-def stream_text(text=str):
-    for word in text.split():
-        yield word + " "
-        if st.session_state.text_stream_speed != 0:
-            speed = (st.session_state.text_stream_speed / 10)
-            time.sleep(speed)
-
 llmon()
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -222,7 +255,9 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     st.session_state.messages.append({"role": "user", "content": user_prompt})
 
     # models turn to shine
+    popup_note(message='generating response...', delay=1.0)
     model_output = st.session_state.chat_model(prompt=prompt, max_tokens=max_prompt_context)
+    popup_note(message=f"tokens used: {model_output['usage']['total_tokens']}", delay=1.0)
     model_response = f"{char_name}: {model_output['choices'][0]['text']}"
     print(model_output)
 
@@ -230,15 +265,19 @@ if user_prompt := st.chat_input(f"Send a message to {char_name}"):
     with st.chat_message("assistant", avatar=chat_model_avatar):
         if code_model == "yes":
             st.markdown(model_response)
-            st.session_state.messages.append({"role": "assistant", "content": model_response})
+            #st.session_state.messages.append({"role": "assistant", "content": model_response})
         else:
-            st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
+            stream_response = model_response
+            model_response = stream_write(stream_text(stream_response))
+            #st.session_state.messages.append({"role": "assistant", "content": stream_write(stream_text(model_response))})
+    st.session_state.messages.append({"role": "assistant", "content": model_response})
     
+    popup_note(message='generating audio...', delay=1.0)
     xtts_max_tokens = model_output['usage']['total_tokens']
     xtts_max_tokens_int = int(xtts_max_tokens)
     if st.session_state.enable_voice == 'yes' and xtts_max_tokens_int < xtts_max_token_count:
         # for code inference, lets only create audio with the first paragraph
-        if code_model == 'yes' :
+        if code_model == 'yes':
             first_paragraph = get_paragraph_before_code(sentence=model_output['choices'][0]['text'], stop_word='```')
             send_only_paragraph = st.session_state.model.inference_stream(first_paragraph, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=code_stream_chunk_size)
             wav_by_chunk(send_only_paragraph)
