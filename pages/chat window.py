@@ -44,6 +44,7 @@ chat_max_context = st.session_state.max_context
 chat_threads = st.session_state.cpu_core_count
 chat_batch_threads = st.session_state.cpu_batch_count
 max_prompt_context = st.session_state.context_max_prompt
+batch_count = st.session_state.batch_count
 # gpu/cuda
 gpu_layers = st.session_state.gpu_layer_count
 # audio
@@ -79,11 +80,12 @@ def stream_text(text=str):
             time.sleep(speed)
 
 def popup_note(message=str, delay=int):
-    st.toast(message)
-    time.sleep(delay)
+    if st.session_state.enable_popups == 'yes':
+        st.toast(message, icon='🍋')
+        time.sleep(delay)
 
 with st.sidebar:
-    st.session_state.note_pad = st.text_area('notes')
+    st.session_state.note_pad = st.text_area('📝notepad')
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -107,7 +109,7 @@ if 'chat_model' not in st.session_state:
     if st.session_state.enable_voice == 'yes':
         warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
     popup_note(message='waking up chat model...', delay=1.0)
-    st.session_state.chat_model = Llama(model_path=chat_model_path, n_threads=chat_threads, n_threads_batch=chat_batch_threads, n_gpu_layers = gpu_layers, n_ctx = chat_max_context, verbose = chat_verbose)
+    st.session_state.chat_model = Llama(model_path=chat_model_path, n_batch=batch_count, n_threads=chat_threads, n_threads_batch=chat_batch_threads, n_gpu_layers = gpu_layers, n_ctx = chat_max_context, verbose = chat_verbose)
     popup_note(message=f'{st.session_state.model_select} loaded!', delay=1.0)
 
 if 'speech_tt_model' not in st.session_state:
