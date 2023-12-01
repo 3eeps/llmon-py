@@ -29,13 +29,6 @@ import simpleaudio
 import sounddevice 
 from scipy.io.wavfile import write as write_wav
 
-def popup_note(message=str, delay=int):
-    st.toast(message)
-    time.sleep(delay)
-
-if 'system_messages' not in st.session_state:
-    popup_note(message='imports loaded', delay=1.0)
-
 # chat model
 chat_model_path = f"./models/{st.session_state.model_select}"
 chat_model_voice_path = f"./voices/{st.session_state.voice_select}"
@@ -85,6 +78,10 @@ def stream_text(text=str):
             speed = (st.session_state.text_stream_speed / 10)
             time.sleep(speed)
 
+def popup_note(message=str, delay=int):
+    st.toast(message)
+    time.sleep(delay)
+
 with st.sidebar:
     st.session_state.note_pad = st.text_area('notes')
 
@@ -105,7 +102,7 @@ if st.session_state.enable_voice == 'yes':
     gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{chat_model_voice_path}"])
 
 if 'chat_model' not in st.session_state:
-    popup_note(message='warning up tts model...', delay=1.0)
+    popup_note(message='warming up tts model...', delay=1.0)
     # get the first inference out of the way
     if st.session_state.enable_voice == 'yes':
         warmup = st.session_state.model.inference_stream(warmup_string, language, gpt_cond_latent, speaker_embedding, stream_chunk_size=warmup_chunk_size)
