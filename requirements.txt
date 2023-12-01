@@ -1,8 +1,10 @@
+pandas
+numpy
+streamlit
+streamlit-extras
 TTS
 llama-cpp-python
 pywhispercpp
 simpleaudio
 sounddevice
 scipy
-streamlit
-streamlit-extras
