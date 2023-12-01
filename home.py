@@ -6,7 +6,6 @@ st.set_page_config(
     page_icon="🍋",
     layout="wide",
     initial_sidebar_state="expanded")
-
 st.title("🍋llmon-py")
 
 def scan_dir(directory):
@@ -23,7 +22,6 @@ voice_box_data = scan_dir('voices')
 
 if 'settings' not in st.session_state:
     llmon_config = st.form('setup')
-
     tab1, tab2, tab3 = st.tabs(["audio", "chat model", "advanced"])
     
     with tab1:
