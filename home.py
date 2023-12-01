@@ -22,7 +22,7 @@ voice_box_data = scan_dir('voices')
 
 if 'settings' not in st.session_state:
     llmon_config = st.form('setup')
-    tab1, tab2, tab3 = st.tabs(["audio", "chat model", "advanced"])
+    tab1, tab2, tab3 = st.tabs(["🔊audio", "💭chat model", "🔗advanced"])
     
     with tab1:
         st.header("audio")
@@ -45,16 +45,18 @@ if 'settings' not in st.session_state:
 
     with tab3:
         st.header("advanced")
-        st.session_state.console_warnings = st.selectbox('hide console warnings', ['ignore', 'default'])
-        st.session_state.verbose_chat = st.selectbox('verbose mode', ['no', 'yes'])
+        st.session_state.enable_popups = st.selectbox('enable system messages', ['yes', 'no'])
         max_prompt_context = st.selectbox('max token gen', ['default', '256', '512', '1024', '1536', '2048', '4096', '8096', '16384', '32768'])
         max_context = st.selectbox('max context size', ['default', '4096', '8096', '16384', '32768'])
         st.session_state.torch_audio_cores = st.slider('torch audio cores', 2, 64, 8)
         st.session_state.gpu_layer_count = st.slider('gpu layers', -1, 128, -1)
         st.session_state.cpu_core_count = st.slider('cpu cores', 1, 128, 12)
         st.session_state.cpu_batch_count = st.slider('cpu batch cores', 1, 128, 12)
+        st.session_state.batch_count = st.slider('cpu batch cores', 0, 1024, 128)
         st.session_state.stream_chunk_size = st.slider('stream chunk size', 20, 200, 40)
         st.session_state.chunk_buffer = st.slider('chunk buffers', 0, 2, 1)
+        st.session_state.console_warnings = st.selectbox('hide console warnings', ['ignore', 'default'])
+        st.session_state.verbose_chat = st.selectbox('verbose mode', ['no', 'yes'])
         
     submit_config_button = llmon_config.form_submit_button('save setup')
      
