@@ -1,8 +1,7 @@
 # 🍋llmon-py
 
-Local Streamlit webui for Large Language Models. Supports GGUF (llama.cpp). Inference with speech-to-text and text-to-speech supported.
-
-uses pytorch, llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
+Local Streamlit webui for Large Language Models. Supports GGUF (llama.cpp). 
+Inference with speech-to-text and text-to-speech also supported.
 
 to launch: streamlit run x:\filedir\home.py 
 
