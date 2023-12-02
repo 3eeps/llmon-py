@@ -1,8 +1,6 @@
 # 🍋llmon-py
 
-local webui for inference with local .gguf models. supports stt-model-tts
-
-made to be modified and learned from. great starting point.
+Local Streamlit webui for Large Language Models. Supports GGUF (llama.cpp). Inference with speech-to-text and text-to-speech supported.
 
 uses pytorch, llama-cpp-python, coqui.ai/xtts, pywhispercpp, and streamlit
 
