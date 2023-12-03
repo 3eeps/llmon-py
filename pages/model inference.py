@@ -216,7 +216,7 @@ def update_chat_template(prompt=str, template_type=str):
     return template
 
 def wav_by_chunk(chunks):
-    popup_note(message='generating audio...', delay=1.0)
+    popup_note(message='generating audio...')
     wav_chunks = []
     stream_chunks = []
     for i, chunk in enumerate(chunks):
@@ -261,17 +261,16 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-#def on_mic_hotkey():
-#    print ('ctrl')
-#    #voice_to_text()
+def on_mic_hotkey():
+    print ('ctrl')
+    #voice_to_text()
     
 if user_text_prompt := st.chat_input(f"Send a message to {char_name}"):
 
     prompt = update_chat_template(prompt=user_text_prompt, template_type=current_template)
     if enable_microphone:
-        pass
-        #keyboard.add_hotkey(hotkey='space', callback=on_mic_hotkey)
-        #user_voice_prompt = st.session_state.user_voice_prompt
+        keyboard.add_hotkey(hotkey='space', callback=on_mic_hotkey)
+        user_voice_prompt = st.session_state.user_voice_prompt
         prompt = update_chat_template(prompt=user_voice_prompt, template_type=current_template)
         
     with st.chat_message("user"):
