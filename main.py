@@ -1,15 +1,18 @@
 # ./codespace/main.py
+# https://www.flaticon.com/free-stickers/lemon
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
 
 import os
 import keyboard
+import random
 
 keyboard.unhook_all()
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
-st.title("llmon-py")
-add_logo("logo.png", height=150)
+llmon_list = ['lemon (1).png', 'lemon (3).png', 'lemon (4).png', 'lemon (5).png', 'lemon (6).png', 'lemon (7).png', 'lemon (8).png', 'lemon (10).png', 'lemon (10).png', 'lemon (11).png', 'lemon (13).png', 'lemon (14).png', 'lemon (15).png', 'lemon (16).png', 'lemon (18).png']
+st.title('llmon-py')
+add_logo(f'./llmon_art/{llmon_list[random.randint(0,14)]}', height=150)
 st.divider()
 
 def scan_dir(directory):
@@ -24,7 +27,6 @@ def scan_dir(directory):
 model_box_data = scan_dir('models')
 voice_box_data = scan_dir('voices')
 tab1, tab2, tab3, tab4 = st.tabs(["🔊audio", "💭chat model", "🔗advanced", '👀 sdxl turbo'])
-    
 with tab1:
     st.header("audio")          
     st.session_state.enable_microphone = st.toggle('enable microphone', value=False)
@@ -36,8 +38,8 @@ with tab1:
 
 with tab2:
     st.header("chat model")
-    st.session_state.model_select = st.selectbox('model file', [model_box_data[0], model_box_data[1], model_box_data[2], model_box_data[3]])   
-    st.session_state.template_select = st.selectbox('chat template', ['user_assist_rick', 'vicuna_based', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci'])
+    st.session_state.model_select = st.selectbox('model file', [model_box_data[2], model_box_data[0], model_box_data[2], model_box_data[3]])   
+    st.session_state.template_select = st.selectbox('chat template', ['vicuna_based', 'user_assist_rick', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci'])
     st.session_state.char_name = st.selectbox('model name', ['Assistant', 'Dr. Rosenburg', 'Duke', 'Rick', 'Cortana', 'Kyle Katarn', 'Art Bell', 'Bot', 'AI', 'Model'])
     st.session_state.model_language = st.selectbox('tts language', ["en", 'es'])
     st.session_state.text_stream_speed = st.slider('streaming text speed', 0, 2, 1)
@@ -51,11 +53,11 @@ with tab3:
     st.session_state.gpu_layer_count = st.slider('gpu layers', -1, 128, -1)
     st.session_state.cpu_core_count = st.slider('cpu cores', 1, 128, 12)
     st.session_state.cpu_batch_count = st.slider('cpu batch cores', 1, 128, 12)
-    st.session_state.batch_size= st.slider('batch size', 0, 1024, 128)
+    st.session_state.batch_size= st.slider('batch size', 0, 1024, 256)
     st.session_state.stream_chunk_size = st.slider('stream chunk size', 20, 200, 40)
     st.session_state.chunk_buffer = st.slider('chunk buffers', 0, 2, 1)
     st.session_state.console_warnings = st.selectbox('hide console warnings', ['ignore', 'default'])
-    st.session_state.verbose_chat = st.toggle('enable verbose console', value=False)
+    st.session_state.verbose_chat = st.toggle('enable verbose console', value=True)
 
 with tab4:
     st.header("sdxl turbo")
