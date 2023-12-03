@@ -1,12 +1,13 @@
 # ./codespace/main.py
-# https://www.flaticon.com/free-stickers/lemon
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
 
+import GPUtil as GPU
 import os
 import keyboard
 import random
+import time
 
 keyboard.unhook_all()
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
@@ -24,8 +25,20 @@ def scan_dir(directory):
             count += count
     return directory_list
 
+def popup_note():
+        st.toast(':red[vram usage over 85%]')
+        time.sleep(2.5)
+
+GPUs = GPU.getGPUs()
+gpu = GPUs[0]
 model_box_data = scan_dir('models')
 voice_box_data = scan_dir('voices')
+
+vram_usage = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
+if vram_usage > 0.85:
+    popup_note()
+
+st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 tab1, tab2, tab3, tab4 = st.tabs(["🔊audio", "💭chat model", "🔗advanced", '👀 sdxl turbo'])
 with tab1:
     st.header("audio")          
@@ -38,15 +51,16 @@ with tab1:
 
 with tab2:
     st.header("chat model")
-    st.session_state.model_select = st.selectbox('model file', [model_box_data[2], model_box_data[0], model_box_data[2], model_box_data[3]])   
+    st.session_state.model_select = st.selectbox('model file', [model_box_data[0], model_box_data[1], model_box_data[2], model_box_data[3]])  
     st.session_state.template_select = st.selectbox('chat template', ['vicuna_based', 'user_assist_rick', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci'])
     st.session_state.char_name = st.selectbox('model name', ['Assistant', 'Dr. Rosenburg', 'Duke', 'Rick', 'Cortana', 'Kyle Katarn', 'Art Bell', 'Bot', 'AI', 'Model'])
     st.session_state.model_language = st.selectbox('tts language', ["en", 'es'])
-    st.session_state.text_stream_speed = st.slider('streaming text speed', 0, 2, 1)
 
 with tab3:
     st.header("advanced")
     st.session_state.enable_popups = st.toggle('enable system popups', value=True)
+    st.session_state.console_warnings = st.selectbox('hide console warnings', ['ignore', 'default'])
+    st.session_state.verbose_chat = st.toggle('enable verbose console', value=True)
     st.session_state.max_context_prompt = int(st.selectbox('max token gen', ['1536', '256', '512', '1024', '2048', '4096', '8096', '16384', '32768']))
     st.session_state.max_context = int(st.selectbox('max context size', ['4096', '8096', '16384', '32768']))
     st.session_state.torch_audio_cores = st.slider('torch audio cores', 2, 64, 8)
@@ -56,9 +70,7 @@ with tab3:
     st.session_state.batch_size= st.slider('batch size', 0, 1024, 256)
     st.session_state.stream_chunk_size = st.slider('stream chunk size', 20, 200, 40)
     st.session_state.chunk_buffer = st.slider('chunk buffers', 0, 2, 1)
-    st.session_state.console_warnings = st.selectbox('hide console warnings', ['ignore', 'default'])
-    st.session_state.verbose_chat = st.toggle('enable verbose console', value=True)
-
+    
 with tab4:
     st.header("sdxl turbo")
     st.session_state.enable_sdxl = st.toggle('enable sdxl turbo', value=False)
