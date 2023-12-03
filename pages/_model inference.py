@@ -56,7 +56,7 @@ GPUs = GPU.getGPUs()
 gpu = GPUs[0]
 
 reveal_logits = True
-speech_model_path = 'pywhisper_model'
+speech_model_path = 'pywhisper_models'
 warmup_string = 'warmup string'
 bits_per_sample = 16
 encoding_type = 'PCM_S'
