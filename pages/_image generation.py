@@ -1,12 +1,11 @@
-# ./codespace/pages/image generation.py
+# ./codespace/pages/_image generation.py
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
-from streamlit_extras.streaming_write import write as stream_write
 
-st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
-st.title("llmon-py")
-add_logo("logo.png", height=150)
+st.set_page_config(page_title="image generation", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
+st.title("llmon-py - image generation")
+add_logo("./llmon_art/lemon (12).png", height=150)
 st.divider()
 
 import GPUtil as GPU
@@ -35,8 +34,12 @@ def stream_text(text=str):
             speed = (text_stream_speed / 10)
             time.sleep(speed)
 
+compare  = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
+print (float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)))
+if compare > 0.25:
+    st.warning(body='🔥 vram limit is being reached')
+st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 with st.sidebar:
-    st.caption("gpu0 free: {0:.0f}mb |used: {1:.0f}mb |total {2:.0f}mb".format(gpu.memoryFree, gpu.memoryUsed, gpu.memoryTotal))
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
     steps = st.slider('steps', 1, 32, 1)
     
@@ -45,6 +48,10 @@ if 'image_pipe' not in st.session_state and enable_sdxl:
     st.session_state.image_pipe = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
     if not enable_cpu_only:
         st.session_state.image_pipe.to('cuda')
+
+vram_usage = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
+if vram_usage > 0.85:
+    popup_note(':red[vram usage over 85%]')
 
 def create_image(image_prompt=str):
     image = st.session_state.image_pipe(prompt=image_prompt, num_inference_steps=steps, guidance_scale=0.0).images[0]
