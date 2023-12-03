@@ -1,4 +1,5 @@
 GPUtil
+keyboard
 pandas
 numpy
 streamlit
