@@ -1,3 +1,4 @@
+GPUtil
 pandas
 numpy
 streamlit
