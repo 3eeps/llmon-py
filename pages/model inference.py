@@ -261,15 +261,17 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-    def on_mic_hotkey():
-        print ('ctrl')
-        #voice_to_text()
+#def on_mic_hotkey():
+#    print ('ctrl')
+#    #voice_to_text()
+    
 if user_text_prompt := st.chat_input(f"Send a message to {char_name}"):
 
     prompt = update_chat_template(prompt=user_text_prompt, template_type=current_template)
     if enable_microphone:
-        keyboard.add_hotkey(hotkey='space', callback=on_mic_hotkey)
-        user_voice_prompt = st.session_state.user_voice_prompt
+        pass
+        #keyboard.add_hotkey(hotkey='space', callback=on_mic_hotkey)
+        #user_voice_prompt = st.session_state.user_voice_prompt
         prompt = update_chat_template(prompt=user_voice_prompt, template_type=current_template)
         
     with st.chat_message("user"):
