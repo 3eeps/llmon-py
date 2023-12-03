@@ -9,3 +9,4 @@ to launch: streamlit run x:\filedir\home.py
 
 ![image](https://github.com/3eeps/llmon-py/assets/55860052/2b1d7d0e-2dce-46e3-b295-cc2c0488d082)
 
+lemons by https://www.flaticon.com/free-stickers/lemon
