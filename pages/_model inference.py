@@ -1,14 +1,13 @@
-# ./codespace/pages/model inference.py
+# ./codespace/pages/_model inference.py
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo 
-from streamlit_extras.streaming_write import write as stream_write
 import keyboard
 
 keyboard.unhook_all()
-st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
-st.title("llmon-py")
-add_logo("logo.png", height=150)
+st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
+st.title("llmon-py _model inference")
+add_logo("./llmon_art/lemon (17).png", height=150)
 st.divider()
 
 import os
@@ -57,7 +56,7 @@ GPUs = GPU.getGPUs()
 gpu = GPUs[0]
 
 reveal_logits = True
-speech_model_path = 'models'
+speech_model_path = 'pywhisper_model'
 warmup_string = 'warmup string'
 bits_per_sample = 16
 encoding_type = 'PCM_S'
@@ -76,12 +75,17 @@ def stream_text(text=str):
         yield word + " "
         if text_stream_speed != 0:
             stream_speed = (text_stream_speed / 10)
+
             time.sleep(stream_speed)
 
 def popup_note(message=str):
     if enable_popups:
         st.toast(message)
         time.sleep(popup_delay)
+
+vram_usage = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
+if vram_usage > 0.85:
+    popup_note(':red[vram usage over 85%]')
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -139,18 +143,6 @@ class AudioStream(Thread):
             except:
                 self.stop_thread = True
 
-class TextStream(Thread):
-    def __init__(self, text=str):
-        super(TextStream, self).__init__()
-        self.stop_thread = False
-        self.text = text
-        self.start()
-
-    def run(self):
-        while not self.stop_thread:
-            stream_write(stream_text(self.text))
-            self.stop_thread = True
-
 def update_chat_template(prompt=str, template_type=str):
     template = template_type
 
@@ -163,6 +155,7 @@ def update_chat_template(prompt=str, template_type=str):
 
     if template_type == 'user_assist_duke':
         user_assist_duke = f"""USER: Imagine you're Duke Nukem, the badass one-liner-spouting hero from the video game series Duke Nukem 3D. You're sitting down with the USER to have a conversation. 
+        Example dialogue: "Damn, those alien bastards are gonna pay for shooting up my ride.", "It's time to kick ass and chew bubble gum... and I'm all outta gum."
 
         USER: {prompt}
         ASSISTANT:"""
@@ -253,12 +246,12 @@ def get_paragraph_before_code(sentence, stop_word):
         result.append(word)
     return ' '.join(result)
 
+st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 with st.sidebar:
-    st.caption("gpu 0 - free: {0:.0f}mb |used: {1:.0f}mb |total {2:.0f}mb".format(gpu.memoryFree, gpu.memoryUsed, gpu.memoryTotal))
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
 
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
+    with st.chat_message(name=message["role"]):
         st.markdown(message["content"])
 
 def on_mic_hotkey():
@@ -269,11 +262,11 @@ if user_text_prompt := st.chat_input(f"Send a message to {char_name}"):
 
     prompt = update_chat_template(prompt=user_text_prompt, template_type=current_template)
     if enable_microphone:
-        keyboard.add_hotkey(hotkey='space', callback=on_mic_hotkey)
+        keyboard.add_hotkey('space', on_mic_hotkey)
         user_voice_prompt = st.session_state.user_voice_prompt
         prompt = update_chat_template(prompt=user_voice_prompt, template_type=current_template)
         
-    with st.chat_message("user"):
+    with st.chat_message(name="user", avatar='🙅'):
         st.markdown(user_text_prompt)
     st.session_state.messages.append({"role": "user", "content": user_text_prompt})
 
@@ -283,12 +276,8 @@ if user_text_prompt := st.chat_input(f"Send a message to {char_name}"):
     if verbose_chat:
         print(model_output)
     
-    with st.chat_message("assistant"):
-        if code_model_voice:
-            st.markdown(model_response)
-        else:
-            stream_response = model_response
-            model_response = stream_write(stream_text(stream_response))
+    with st.chat_message(name="assistant", avatar='🤖'):
+        st.markdown(model_response)
     st.session_state.messages.append({"role": "assistant", "content": model_response})
     
     if enable_voice and int(model_output['usage']['total_tokens']) < xtts_token_limit:
