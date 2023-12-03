@@ -1,5 +1,4 @@
-# ![lpy](https://github.com/3eeps/llmon-py/assets/55860052/b62b9337-43e2-494e-94aa-3a76d23ef676)
-llmon-py
+# llmon-py
 
 Local Streamlit webui for Large Language Models. Supports GGUF (llama.cpp). 
 Inference with speech-to-text and text-to-speech also supported.
