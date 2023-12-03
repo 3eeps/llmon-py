@@ -3,7 +3,7 @@
 Local Streamlit webui for Large Language Models. Supports GGUF (llama.cpp). 
 Inference with speech-to-text and text-to-speech also supported.
 
-Experimental SDXL Turbo support has been added, remove image generation.py from the 'pages' folder to remove feature.
+remove image generation.py from the 'pages' folder to the remove sdxl page.
 
 to launch: streamlit run x:\filedir\home.py 
 
