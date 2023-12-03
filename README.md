@@ -3,7 +3,7 @@
 Local Streamlit webui for Large Language Models. Supports GGUF. 
 Inference with speech-to-text and text-to-speech also supported.
 
-remove image generation.py from the 'pages' folder to the remove sdxl page.
+Experimental SDXL Turbo page added, can be safely removed.
 
 to launch: streamlit run x:\filedir\home.py 
 
