@@ -1,11 +1,11 @@
-# ./codespace/pages/_image generation.py
+# ./codespace/pages/image generation.py
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
 
 st.set_page_config(page_title="image generation", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
 st.title("llmon-py - image generation")
-add_logo("./llmon_art/lemon (12).png", height=150)
+add_logo("./llmon_art/lemon (12).png")
 st.divider()
 
 import GPUtil as GPU
@@ -15,7 +15,6 @@ import torch
 from diffusers import AutoPipelineForText2Image
 
 enable_popups = st.session_state.enable_popups
-text_stream_speed = st.session_state.text_stream_speed
 enable_sdxl = st.session_state.enable_sdxl
 enable_cpu_only = st.session_state.enable_cpu_only
 GPUs = GPU.getGPUs()
@@ -27,18 +26,6 @@ def popup_note(message=str):
         st.toast(message)
         time.sleep(popup_delay)
 
-def stream_text(text=str):
-    for word in text.split():
-        yield word + " "
-        if text_stream_speed != 0:
-            speed = (text_stream_speed / 10)
-            time.sleep(speed)
-
-compare  = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
-print (float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)))
-if compare > 0.25:
-    st.warning(body='🔥 vram limit is being reached')
-st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 with st.sidebar:
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
     steps = st.slider('steps', 1, 32, 1)
@@ -49,10 +36,6 @@ if 'image_pipe' not in st.session_state and enable_sdxl:
     if not enable_cpu_only:
         st.session_state.image_pipe.to('cuda')
 
-vram_usage = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
-if vram_usage > 0.85:
-    popup_note(':red[vram usage over 85%]')
-
 def create_image(image_prompt=str):
     image = st.session_state.image_pipe(prompt=image_prompt, num_inference_steps=steps, guidance_scale=0.0).images[0]
     image.save(f'_image.png')
@@ -61,6 +44,11 @@ def create_image(image_prompt=str):
 
 def on_space():
     keyboard.send('enter')
+
+check_vram = float("{0:.0f}".format(gpu.memoryUsed)) / float("{0:.0f}".format(gpu.memoryTotal))
+if check_vram > 0.85:
+    st.warning(body='🔥 vram limit is being reached')
+st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 
 if enable_sdxl:
     keyboard.add_hotkey('space', on_space)
