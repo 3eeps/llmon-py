@@ -7,13 +7,12 @@ import GPUtil as GPU
 import os
 import keyboard
 import random
-import time
 
 keyboard.unhook_all()
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
 llmon_list = ['lemon (1).png', 'lemon (3).png', 'lemon (4).png', 'lemon (5).png', 'lemon (6).png', 'lemon (7).png', 'lemon (8).png', 'lemon (10).png', 'lemon (10).png', 'lemon (11).png', 'lemon (13).png', 'lemon (14).png', 'lemon (15).png', 'lemon (16).png', 'lemon (18).png']
 st.title('llmon-py')
-add_logo(f'./llmon_art/{llmon_list[random.randint(0,14)]}', height=150)
+add_logo(f'./llmon_art/{llmon_list[random.randint(0,14)]}')
 st.divider()
 
 def scan_dir(directory):
@@ -25,24 +24,21 @@ def scan_dir(directory):
             count += count
     return directory_list
 
-def popup_note():
-        st.toast(':red[vram usage over 85%]')
-        time.sleep(2.5)
-
 GPUs = GPU.getGPUs()
 gpu = GPUs[0]
 model_box_data = scan_dir('models')
 voice_box_data = scan_dir('voices')
 
-vram_usage = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
-if vram_usage > 0.85:
-    popup_note()
-
+check_vram = float("{0:.0f}".format(gpu.memoryUsed)) / float("{0:.0f}".format(gpu.memoryTotal))
+if check_vram > 0.85:
+    st.warning(body='🔥 vram limit is being reached')
 st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
+
 tab1, tab2, tab3, tab4 = st.tabs(["🔊audio", "💭chat model", "🔗advanced", '👀 sdxl turbo'])
 with tab1:
     st.header("audio")          
     st.session_state.enable_microphone = st.toggle('enable microphone', value=False)
+    st.session_state.microphone_hotkey = st.selectbox('microphone hotkey', ['ctrl'])
     st.session_state.enable_voice = st.toggle('enable tts model', value=False)
     st.session_state.enable_code_voice = st.toggle('enable coding mode', value=False)
     st.session_state.user_audio_length = st.slider("microphone rec time(sec)", 2, 25, 8)
