@@ -1,4 +1,4 @@
-# ./codespace/pages/_model inference.py
+# ./codespace/pages/model inference.py
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo 
@@ -7,7 +7,7 @@ import keyboard
 keyboard.unhook_all()
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
 st.title("llmon-py _model inference")
-add_logo("./llmon_art/lemon (17).png", height=150)
+add_logo("./llmon_art/lemon (17).png")
 st.divider()
 
 import os
@@ -32,7 +32,6 @@ code_model_voice = st.session_state.enable_code_voice
 current_template = st.session_state.template_select
 enable_voice = st.session_state.enable_voice
 enable_popups = st.session_state.enable_popups
-text_stream_speed = st.session_state.text_stream_speed
 verbose_chat = st.session_state.verbose_chat
 chat_max_context = st.session_state.max_context
 chat_threads = st.session_state.cpu_core_count
@@ -46,7 +45,6 @@ chunk_buffer = st.session_state.chunk_buffer
 stream_chunk_size = st.session_state.stream_chunk_size
 language = st.session_state.model_language
 enable_console_warnings = st.session_state.console_warnings
-text_stream_speed = st.session_state.text_stream_speed
 enable_microphone = st.session_state.enable_microphone
 
 os.system('cls')
@@ -70,22 +68,10 @@ dim = 0
 log_probs = 5
 popup_delay = 1.0
 
-def stream_text(text=str):
-    for word in text.split():
-        yield word + " "
-        if text_stream_speed != 0:
-            stream_speed = (text_stream_speed / 10)
-
-            time.sleep(stream_speed)
-
 def popup_note(message=str):
     if enable_popups:
         st.toast(message)
         time.sleep(popup_delay)
-
-vram_usage = float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal))
-if vram_usage > 0.85:
-    popup_note(':red[vram usage over 85%]')
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -142,6 +128,15 @@ class AudioStream(Thread):
                 self.iter = self.iter + 1
             except:
                 self.stop_thread = True
+
+                  #def play_audio_thread():
+            #while True:
+             #   wav = audio_queue.get()
+            #    if wav is None:
+            #        break
+            #    play_audio(wav)
+            #    audio_thread = threading.Thread(target=play_audio_thread)
+        #audio_thread.start()
 
 def update_chat_template(prompt=str, template_type=str):
     template = template_type
@@ -246,7 +241,11 @@ def get_paragraph_before_code(sentence, stop_word):
         result.append(word)
     return ' '.join(result)
 
+check_vram = float("{0:.0f}".format(gpu.memoryUsed)) / float("{0:.0f}".format(gpu.memoryTotal))
+if check_vram > 0.85:
+    st.warning(body='🔥 vram limit is being reached')
 st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
+
 with st.sidebar:
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
 
@@ -255,14 +254,14 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 def on_mic_hotkey():
-    print ('ctrl')
-    #voice_to_text()
+    print ('voice')
+    voice_to_text()
     
 if user_text_prompt := st.chat_input(f"Send a message to {char_name}"):
 
     prompt = update_chat_template(prompt=user_text_prompt, template_type=current_template)
     if enable_microphone:
-        keyboard.add_hotkey('space', on_mic_hotkey)
+        keyboard.add_hotkey('ctrl', on_mic_hotkey)
         user_voice_prompt = st.session_state.user_voice_prompt
         prompt = update_chat_template(prompt=user_voice_prompt, template_type=current_template)
         
