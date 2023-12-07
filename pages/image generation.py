@@ -47,7 +47,8 @@ def on_space():
 
 check_vram = float("{0:.0f}".format(gpu.memoryUsed)) / float("{0:.0f}".format(gpu.memoryTotal))
 if check_vram > 0.85:
-    st.warning(body='🔥 vram limit is being reached')
+    popup_delay = 2.0
+    popup_note(message='😭 vram limit is being reached')
 st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 
 if enable_sdxl:
