@@ -6,7 +6,7 @@ import keyboard
 
 keyboard.unhook_all()
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
-st.title("llmon-py _model inference")
+st.title("llmon-py - model inference")
 add_logo("./llmon_art/lemon (17).png")
 st.divider()
 
@@ -122,6 +122,9 @@ class AudioStream(Thread):
         while not self.stop_thread:
             try:    
                 wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.iter}.wav")
+      #          audio_file = open('myaudio.ogg', 'rb')
+#audio_bytes = audio_file.read() < --- try
+                #st.audio('xtts_stream{self.iter}.wav')
                 play_audio = wav_object.play()
                 play_audio.wait_done()
                 os.remove(f"xtts_stream{self.iter}.wav")
@@ -243,7 +246,8 @@ def get_paragraph_before_code(sentence, stop_word):
 
 check_vram = float("{0:.0f}".format(gpu.memoryUsed)) / float("{0:.0f}".format(gpu.memoryTotal))
 if check_vram > 0.85:
-    st.warning(body='🔥 vram limit is being reached')
+    popup_delay = 2.0
+    popup_note(message='😭 vram limit is being reached')
 st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 
 with st.sidebar:
@@ -253,11 +257,13 @@ for message in st.session_state.messages:
     with st.chat_message(name=message["role"]):
         st.markdown(message["content"])
 
-def on_mic_hotkey():
-    print ('voice')
-    voice_to_text()
+
     
 if user_text_prompt := st.chat_input(f"Send a message to {char_name}"):
+
+    def on_mic_hotkey():
+        print ('voice')
+        voice_to_text()
 
     prompt = update_chat_template(prompt=user_text_prompt, template_type=current_template)
     if enable_microphone:
