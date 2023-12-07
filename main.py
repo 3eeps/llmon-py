@@ -7,6 +7,7 @@ import GPUtil as GPU
 import os
 import keyboard
 import random
+import time
 
 keyboard.unhook_all()
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
@@ -29,9 +30,13 @@ gpu = GPUs[0]
 model_box_data = scan_dir('models')
 voice_box_data = scan_dir('voices')
 
+def popup_note(message=str):
+        st.toast(message)
+        time.sleep(2.0)
+
 check_vram = float("{0:.0f}".format(gpu.memoryUsed)) / float("{0:.0f}".format(gpu.memoryTotal))
 if check_vram > 0.85:
-    st.warning(body='🔥 vram limit is being reached')
+    popup_note(message='😭 vram limit is being reached')
 st.progress(float("{0:.0f}".format(gpu.memoryFree)) / float("{0:.0f}".format(gpu.memoryTotal)), "vram {0:.0f}/{1:.0f}mb".format(gpu.memoryUsed, gpu.memoryTotal))
 
 tab1, tab2, tab3, tab4 = st.tabs(["🔊audio", "💭chat model", "🔗advanced", '👀 sdxl turbo'])
