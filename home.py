@@ -99,7 +99,6 @@ default_settings_state = {'enable_message_beep': True,
                           'turbo_cpu': False,
                           'enable_sdxl': False,
                           'sdxl_cpu': False,
-                          'lora_to_load': lora_list[0],
                           'ocr_device': False,}
 
 for key, value in default_settings_state.items():
@@ -186,12 +185,6 @@ with tab4:
     st.session_state['sdxl_cpu'] = st.toggle('run on cpu', value=st.session_state['sdxl_cpu'])
     st.header("moondream1 (ocr)")
     st.session_state['ocr_device'] = st.toggle('run on cpu', value=st.session_state['ocr_device'], key='ocr_cpu')
-
-    set_lora_index = 0
-    for key, value in lora_list_dict.items():
-        if value == st.session_state['lora_to_load']:
-            set_lora_index = key
-    st.session_state['lora_to_load'] = st.session_state.lora_to_load = st.selectbox('lora to load', lora_list, index=set_lora_index)
 
 st.json(st.session_state, expanded=False)
 
