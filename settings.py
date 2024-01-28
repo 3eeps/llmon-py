@@ -1,4 +1,4 @@
-# ./codespace/settings.py
+# ./codespace/main.py
 
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
@@ -23,8 +23,8 @@ voice_box_data = scan_dir('./voices')
 lora_list = scan_dir("./loras")
 
 # pull from text files?
-chat_templates = ['alpaca_noro', 'vicuna_based', 'none', 'deepseek', 'user_assist_rick', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci']
-model_names = ['Assistant', 'Nora', 'Dr. Rosenburg', 'Duke', 'Rick', 'Cortana', 'Kyle Katarn', 'Art Bell', 'Bot', 'AI', 'Model', 'Johnny 5', 'Codebot']
+chat_templates = ['vicuna_based', 'deepseek', 'user_assist_rick', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci']
+model_names = ['Assistant', 'Dr. Rosenburg', 'Duke', 'Rick', 'Cortana', 'Kyle Katarn', 'Art Bell', 'Bot', 'AI', 'Model', 'Johnny 5', 'Codebot']
 default_context_list = [128, 256, 512, 1024, 2048, 4096, 8096, 16384, 32768]
 default_max_context_list = [2048, 4096, 8096, 16384, 32768]
 
@@ -76,6 +76,7 @@ st.session_state.clear_vram = st.toggle('clear vram', value=False)
 default_settings_state = {'enable_message_beep': True,
                           'enable_microphone': False,
                           'enable_voice': False,
+                          'tts_cpu': False,
                           'enable_code_voice': False,
                           'user_audio_length': 8,
                           'voice_select': voice_box_data[0],
@@ -94,26 +95,29 @@ default_settings_state = {'enable_message_beep': True,
                           'stream_chunk_size': 35,
                           'chunk_pre_buffer': 3,
                           'enable_sdxl_turbo': False,
-                          'enable_cpu_only': False,
+                          'img2img_on': False,
+                          'turbo_cpu': False,
                           'enable_sdxl': False,
-                          'lora_to_load': lora_list[0]}
+                          'sdxl_cpu': False,
+                          'lora_to_load': lora_list[0],
+                          'ocr_device': False,}
 
 for key, value in default_settings_state.items():
     if key not in st.session_state:
         st.session_state[key] = value
         
-tab1, tab2, tab3, tab4 = st.tabs(["🔊audio", "💭chat model", "🔗advanced", '👀 sdxl'])
+tab1, tab2, tab3, tab4 = st.tabs(["🔊audio", "💭chat model", "🔗advanced", '👀 image gen/ocr'])
 with tab1:
     st.header("audio")
     st.session_state['enable_message_beep'] = st.toggle('enable message boop', value=st.session_state['enable_message_beep'])        
     st.session_state['enable_microphone'] = st.toggle('enable microphone', value=st.session_state['enable_microphone'])
     st.session_state['enable_voice'] = st.toggle('enable tts model', value=st.session_state['enable_voice'])
-
     if st.session_state['enable_voice'] == True:
         tts_coding_button = False
     else:
         tts_coding_button = True
 
+    st.session_state['tts_cpu'] = st.toggle('run xtts on cpu', value=st.session_state['tts_cpu'], key='tts_on_cpu')
     st.session_state['enable_code_voice'] = st.toggle('enable tts coding mode', value=st.session_state['enable_code_voice'], disabled=tts_coding_button)
     st.session_state['user_audio_length'] = st.slider("microphone rec time(sec)", 2, 25, st.session_state['user_audio_length'])
 
@@ -121,7 +125,6 @@ with tab1:
     for key, value in voice_box_dict.items():
         if value == st.session_state['voice_select']:
             set_voice_index = key
-
     st.session_state['voice_select'] = st.selectbox('voice file', voice_box_data, index=set_voice_index)
     st.audio(f"./voices/{st.session_state['voice_select']}")
 
@@ -132,26 +135,22 @@ with tab2:
     for key, value in model_box_dict.items():
         if value == st.session_state['model_select']:
             set_model_index = key
-
     st.session_state['model_select'] = st.selectbox('model file', model_box_data, index=set_model_index)
 
     set_template_index = 0
     for key, value in chat_template_dict.items():
         if value == st.session_state['template_select']:
             set_template_index = key
-
     st.session_state['template_select'] = st.selectbox('chat template', chat_templates, index=set_template_index)
 
     set_char_name_index = 0
     for key, value in model_name_dict.items():
         if value == st.session_state['char_name']:
             set_char_name_index = key
-
     st.session_state['char_name'] = st.selectbox('model character name', model_names, index=set_char_name_index)
 
 with tab3:
     st.header("advanced")
-    #st.session_state.enable_summarizer = st.toggle('summarize text', value=False)
     st.session_state['enable_popups'] = st.toggle('enable system popups', value=st.session_state['enable_popups'])
     st.session_state['verbose_chat'] = st.toggle('enable verbose console', value=st.session_state['verbose_chat'])
 
@@ -159,29 +158,32 @@ with tab3:
     for key, value in default_context_dict.items():
         if value == st.session_state['max_context_prompt']:
             set_context_index = key
-
     st.session_state['max_context_prompt'] = st.selectbox('max token gen', default_context_list, index=set_context_index)
 
     set_max_context_index = 0
     for key, value in default_max_context_dict.items():
         if value == st.session_state['max_context']:
             set_max_context_index = key
-
     st.session_state['max_context']= st.selectbox('max context size', default_max_context_list, index=set_max_context_index)
+
     st.session_state['torch_audio_cores'] = st.slider('torch audio cores', 2, 32, st.session_state['torch_audio_cores'])
     st.session_state['gpu_layer_count'] = st.slider('gpu layers', -1, 128, st.session_state['gpu_layer_count'])
     st.session_state['cpu_core_count'] = st.slider('cpu cores', 1, 128, st.session_state['cpu_core_count'])
     st.session_state['cpu_batch_count'] = st.slider('cpu batch cores', 1, 128,  st.session_state['cpu_batch_count'])
     st.session_state['batch_size'] = st.slider('batch size', 0, 1024, st.session_state['batch_size'])
     st.session_state['stream_chunk_size'] = st.slider('stream chunk size', 20, 200, st.session_state['stream_chunk_size'])
-    st.session_state['chunk_pre_buffer'] = st.slider('chunk buffers', 0, 4, st.session_state['chunk_pre_buffer'])
+    st.session_state['chunk_pre_buffer'] = st.slider('chunk buffers', 0, 6, st.session_state['chunk_pre_buffer'])
     
 with tab4:
     st.header("sdxl turbo")
     st.session_state['enable_sdxl_turbo'] = st.toggle('enable sdxl turbo', value=st.session_state['enable_sdxl_turbo'])
-    st.session_state['enable_cpu_only'] = st.toggle('run turbo on cpu', value=st.session_state['enable_cpu_only'])
+    st.session_state['img2img_on'] = st.toggle('enable sdxl turbo img2img', value=st.session_state['img2img_on'])
+    st.session_state['turbo_cpu'] = st.toggle('run on cpu', value=st.session_state['turbo_cpu'], key='turbo')
     st.header("sdxl 1.0")
     st.session_state['enable_sdxl'] = st.toggle('enable sdxl 1.0', value=st.session_state['enable_sdxl'])
+    st.session_state['sdxl_cpu'] = st.toggle('run on cpu', value=st.session_state['sdxl_cpu'])
+    st.header("moondream1 (ocr)")
+    st.session_state['ocr_device'] = st.toggle('run on cpu', value=st.session_state['ocr_device'])
 
     set_lora_index = 0
     for key, value in lora_list_dict.items():
@@ -194,9 +196,34 @@ st.write('session state details')
 st.json(st.session_state, expanded=False)
 
 if st.session_state.clear_vram:
-    del st.session_state.model
-    del st.session_state.config
-    del st.session_state['chat_model']
+    try:
+        del st.session_state.vision_encoder
+        st.session_state.vision_encoder = None
+    except:
+        pass
+
+    try:
+        del st.session_state.text_model
+        st.session_state.text_model = None
+    except:
+        pass
+
+    try:
+        del st.session_state.model
+        st.session_state.model = None
+    except:
+        pass
+
+    try:
+        del st.session_state.config
+        st.session_state.model = None
+    except:
+        pass
+
+    try:
+        del st.session_state['chat_model']
+        st.session_state['chat_model'] = None
+    except:
+        pass
+
     torch.cuda.empty_cache()
-    st.session_state['chat_model'] = None
-    st.session_state.model = None
