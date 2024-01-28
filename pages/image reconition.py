@@ -21,16 +21,17 @@ if 'vision_encoder' not in st.session_state:
 
 moondream_prompt = st.text_input(label="image reconition with :orange[moondream1]")
 send_prompt = st.button("submit")
-st.image(f"./images/{image_selected}")
+
+st.image(image=f"./images/{image_selected}", caption=re.sub("<$", "", re.sub("END$", "", st.session_state.buffer)), )
 
 if send_prompt:
     start_time = time.time()
     response = reconition.generate_response(image=image_selected, prompt=moondream_prompt)
 
-    buffer = ""
+    st.session_state.buffer = ""
     for word in response:
-        buffer += word
-    st.write(re.sub("<$", "", re.sub("END$", "", buffer)))
+        st.session_state.buffer += word
 
     with st.sidebar:
         st.write(f"elapsed time: {int(time.time()-start_time)} secs")
+    st.rerun()
