@@ -7,7 +7,7 @@ import torch
 
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
 st.title('llmon-py')
-add_logo("./llmon_art/pie.png", height=130)
+add_logo("./llmonpy/pie.png", height=130)
 
 def scan_dir(directory):
     directory_list = []
@@ -85,6 +85,7 @@ default_settings_state = {'enable_message_beep': True,
                           'char_name': model_names[0],
                           'enable_popups': True,
                           'verbose_chat': True,
+                          'enable_ngrok': False,
                           'max_context_prompt': 1024,
                           'max_context': 4096,
                           'torch_audio_cores': 8,
@@ -155,6 +156,7 @@ with tab3:
     st.header("advanced")
     st.session_state['enable_popups'] = st.toggle('enable system popups', value=st.session_state['enable_popups'])
     st.session_state['verbose_chat'] = st.toggle('enable verbose console', value=st.session_state['verbose_chat'])
+    st.session_state['enable_ngrok'] = st.toggle('enable ngrok', value=st.session_state['enable_ngrok'])
 
     set_context_index = 0
     for key, value in default_context_dict.items():
@@ -195,6 +197,8 @@ with tab4:
 
 st.json(st.session_state, expanded=False)
 
+# pickle state, dont include the following vars and then unpickle? may drp thes from the session state
+
 if st.session_state.clear_vram:
     try:
         del st.session_state.vision_encoder
@@ -226,3 +230,7 @@ if st.session_state.clear_vram:
     except:
         pass
     torch.cuda.empty_cache()
+
+    if st.session_state['enable_ngrok']:
+        args = "http http://localhost:8501/"
+        os.system(f"./ngrok.exe {args}")
