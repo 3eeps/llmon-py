@@ -183,7 +183,7 @@ with tab4:
     st.session_state['enable_sdxl'] = st.toggle('enable sdxl 1.0', value=st.session_state['enable_sdxl'])
     st.session_state['sdxl_cpu'] = st.toggle('run on cpu', value=st.session_state['sdxl_cpu'])
     st.header("moondream1 (ocr)")
-    st.session_state['ocr_device'] = st.toggle('run on cpu', value=st.session_state['ocr_device'])
+    st.session_state['ocr_device'] = st.toggle('run on cpu', value=st.session_state['ocr_device'], key='ocr_cpu')
 
     set_lora_index = 0
     for key, value in lora_list_dict.items():
