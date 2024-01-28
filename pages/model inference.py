@@ -7,15 +7,8 @@ st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide"
 st.title("model inference")
 if st.session_state['enable_voice']:
     st.markdown(f"with :orange[***{st.session_state['model_select']}***]   :green[+ xttsv2]!")
-elif st.session_state['enable_voice'] and st.session_state['enable_microphone']:
-    st.markdown(f"with :orange[***{st.session_state['model_select']}***]   :green[+ xttsv2]!")
-    st.markdown(f":red[*microphone enabled*]")
-elif st.session_state['enable_microphone']:
-    st.markdown(f"with :orange[***{st.session_state['model_select']}***]")
-    st.markdown(f":red[*microphone enabled*]")
 else:
     st.markdown(f"with :orange[***{st.session_state['model_select']}***]")
-
 add_logo("./llmon_art/pie.png", height=130)
 
 import os
@@ -63,7 +56,7 @@ def popup_note(message=str):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if 'model' not in st.session_state and st.session_state['enable_voice']:# or st.session_state.model == None:
+if 'model' not in st.session_state and st.session_state['enable_voice']:# or st.session_state.config == None:
     popup_note(message='😤 hyping up tts model...')
     st.session_state.config = XttsConfig()
     st.session_state.config.load_json("./xtts_config/config.json")
@@ -84,7 +77,7 @@ if st.session_state['enable_voice']:
     gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{chat_model_voice_path}"])
     warmup_tts = st.session_state.model.inference_stream(text=warmup_string, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=warmup_chunk_size)
 
-if 'chat_model' not in st.session_state or st.session_state['chat_model'] == None:
+if 'chat_model' not in st.session_state: # or st.session_state['chat_model'] == None:
     popup_note(message='😴 waking up chat model...')
     logits_list = str
     st.session_state.chat_model = Llama(model_path=chat_model_path, logits_all=reveal_logits, n_batch=st.session_state['batch_size'], n_threads=st.session_state['cpu_core_count'], n_threads_batch=st.session_state['cpu_batch_count'], n_gpu_layers=st.session_state['gpu_layer_count'], n_ctx=st.session_state['max_context'], verbose=st.session_state['verbose_chat'])
@@ -98,6 +91,7 @@ class AudioStream(Thread):
         self.start()
 
     def run(self):
+        try_again = False
         while self.run_thread:
             try:    
                 wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.counter}.wav")
@@ -106,7 +100,11 @@ class AudioStream(Thread):
                 os.remove(f"xtts_stream{self.counter}.wav")
                 self.counter += 1
             except:
-                self.run_thread = False
+                try_again = True
+                if try_again:
+                    pass
+                else:
+                    self.run_thread = False
                     
 def update_chat_template(prompt=str, template_type=str):
     template = template_type
@@ -192,16 +190,19 @@ def update_chat_template(prompt=str, template_type=str):
 
     return template
 
-def wav_by_chunk(chunks):
+def wav_by_chunk(chunks, token_count=int):
     popup_note(message='😁 generating audio...')
     wav_chunks = []
     all_chunks = []
+    chunk_buffer = st.session_state['chunk_pre_buffer']
     for i, chunk in enumerate(chunks):
         wav_chunks.append(chunk)
         all_chunks.append(chunk)
         wav = torch.cat(wav_chunks, dim=dim)
         torchaudio.save(f"xtts_stream{i}.wav", wav.squeeze().unsqueeze(0).cpu(), sample_rate=chunk_sample_rate, encoding=encoding_type, bits_per_sample=bits_per_sample)
-        if i == st.session_state['chunk_pre_buffer'] and wav_chunks:
+        if token_count < 50:
+            chunk_buffer = 1
+        if i == chunk_buffer and wav_chunks:
             AudioStream()
         wav_chunks = []
     full_wav = torch.cat(all_chunks, dim=dim)
@@ -240,12 +241,20 @@ def message_boop():
 
 with st.sidebar:
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
-    
+    if st.session_state['enable_microphone']:
+        st.markdown(f":red[*microphone enabled*]")
+
 for message in st.session_state.messages:
     with st.chat_message(name=message["role"]):
         st.markdown(message["content"])
 
-if user_text_prompt := st.chat_input(f"Send a message to {st.session_state['char_name']}"):
+input_message = str
+if st.session_state['enable_microphone']:
+    input_message = f"Type a message to {st.session_state['char_name']}, or use microphone by typing 'q'"
+else:
+    input_message = f"Send a message to {st.session_state['char_name']}"
+
+if user_text_prompt := st.chat_input(input_message):
     user_prompt = user_text_prompt
     if user_text_prompt == 'q' and st.session_state['enable_microphone']:
         user_prompt = voice_to_text()
@@ -279,7 +288,7 @@ if user_text_prompt := st.chat_input(f"Send a message to {st.session_state['char
         if st.session_state['enable_code_voice']:
             get_paragraph = get_paragraph_before_code(sentence=model_output['choices'][0]['text'], stop_word='```')
             paragraph = st.session_state.model.inference_stream(text=get_paragraph, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=code_stream_chunk_size)
-            wav_by_chunk(paragraph)
+            wav_by_chunk(chunks=paragraph, token_count=int(model_output['usage']['total_tokens']))
         else:
             chunk_inference = st.session_state.model.inference_stream(text=model_output['choices'][0]['text'], language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=st.session_state['stream_chunk_size'], enable_text_splitting=True)
-            wav_by_chunk(chunk_inference)
+            wav_by_chunk(chunks=chunk_inference, token_count=int(model_output['usage']['total_tokens']))
