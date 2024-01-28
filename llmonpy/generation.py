@@ -1,25 +1,10 @@
 # ./codespace/llmon/generation.py
-
 import streamlit as st
-import os
 import time
 import torch
 from diffusers import DiffusionPipeline, AutoPipelineForText2Image, AutoPipelineForImage2Image
 from diffusers.utils import load_image
 from datetime import datetime
-
-def scan_dir(directory):
-    directory_list = []
-    count = 0
-    for file in os.scandir(f'{directory}'):
-        if file.is_file():
-            directory_list.append(file.name)
-            count += count
-    return directory_list
-
-def popup_note(message=str, enable=st.session_state['enable_popups']):
-    if enable:
-        st.toast(message)
 
 def load_sdxl(default_device='cuda', lora_path="./loras", lora_name=str):
     device = default_device
