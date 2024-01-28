@@ -191,10 +191,8 @@ with tab4:
     for key, value in lora_list_dict.items():
         if value == st.session_state['lora_to_load']:
             set_lora_index = key
-
     st.session_state['lora_to_load'] = st.session_state.lora_to_load = st.selectbox('lora to load', lora_list, index=set_lora_index)
 
-st.write('session state details')
 st.json(st.session_state, expanded=False)
 
 if st.session_state.clear_vram:
@@ -227,5 +225,4 @@ if st.session_state.clear_vram:
         st.session_state['chat_model'] = None
     except:
         pass
-
     torch.cuda.empty_cache()
