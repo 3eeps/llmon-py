@@ -9,7 +9,6 @@ add_logo("./llmonpy/pie.png", height=130)
 
 from llmonpy import generation, llmonaid
 
-image_list = llmonaid.scan_dir('./images')
 lora_list = llmonaid.scan_dir("./loras")
 
 with st.sidebar:
@@ -17,7 +16,11 @@ with st.sidebar:
     if st.session_state['enable_sdxl']:
         lora_selected = st.selectbox('lora for sdxl', lora_list)
     if st.session_state['img2img_on']:
-        image_selected = st.selectbox('image for img2img', image_list)
+        uploaded_file = st.file_uploader(label="Choose a image file")
+        if uploaded_file is not None:
+            st.session_state.bytes_data = uploaded_file.getvalue()
+        else:
+            st.session_state.buffer = ""
     if st.session_state['enable_sdxl'] or st.session_state['img2img_on']:
         iter_count = st.slider('number of images', 1, 32, 1)
 
@@ -45,6 +48,7 @@ if st.session_state['enable_sdxl']:
 if st.session_state['img2img_on']:
     img2img_prompt = st.text_input(label='image to image generation with sdxl turbo')
     send_img2img_prompt = st.button("submit", key='img2img')
-    st.image(f"./images/{image_selected}")
+    #st.image(f"./images/{image_selected}")
     if send_img2img_prompt:
-        st.image(generation.create_image_img2img(from_image=image_selected, prompt=img2img_prompt, iterations=iter_count))
+        #st.image(generation.create_image_img2img(from_image=image_selected, prompt=img2img_prompt, iterations=iter_count))
+        pass
