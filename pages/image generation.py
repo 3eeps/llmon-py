@@ -30,6 +30,7 @@ def popup_note(message=str):
 
 lora_path = "./loras"
 image_list = scan_dir('./images')
+device = 'cuda'
 
 default_step = 0
 if st.session_state['enable_sdxl']:
@@ -48,12 +49,16 @@ with st.sidebar:
     iter_count = st.slider('number of images', 1, 32, 1)
     gen_buffer = st.slider('sdxl turbo gen buffer', 50, 5000, 1000)
 
-if 'img2img_pipe' not in st.session_state and st.session_state['img2img_on']:   
-    st.session_state['img2img_pipe'] = AutoPipelineForImage2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16").to("cuda")
+if 'img2img_pipe' not in st.session_state and st.session_state['img2img_on']:
+    if st.session_state['turbo_cpu']:
+        device = 'cpu'   
+    st.session_state['img2img_pipe'] = AutoPipelineForImage2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16").to(device)
 
 if 'image_pipe_sdxl' not in st.session_state and st.session_state['enable_sdxl']:
     popup_note(message='👊 hiting up sdxl 1.O...')
-    st.session_state.image_pipe_sdxl = DiffusionPipeline.from_pretrained(pretrained_model_name_or_path="stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16).to('cuda')
+    if st.session_state['sdxl_cpu']:
+        device = 'cpu'
+    st.session_state.image_pipe_sdxl = DiffusionPipeline.from_pretrained(pretrained_model_name_or_path="stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16).to(device)
     st.session_state.image_pipe_sdxl.load_lora_weights(pretrained_model_name_or_path_or_dict=lora_path, weight_name=st.session_state['lora_to_load'])
     st.session_state.image_pipe_sdxl.enable_vae_slicing()
     st.session_state.image_pipe_sdxl.enable_model_cpu_offload()
@@ -61,7 +66,9 @@ if 'image_pipe_sdxl' not in st.session_state and st.session_state['enable_sdxl']
 if 'image_pipe_turbo' not in st.session_state and st.session_state['enable_sdxl_turbo']:
     popup_note(message='👊 hiting up sdxl turbo...')
     st.session_state.image_pipe_turbo = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
-    st.session_state.image_pipe_turbo.to('cuda')
+    if st.session_state['turbo_cpu']:
+        device = 'cpu'
+    st.session_state.image_pipe_turbo.to(device)
 
 def create_image_turbo():
     image_prompt = st_keyup(label='real time(ish) image generation using sdxl turbo', debounce=gen_buffer)
