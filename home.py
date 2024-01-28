@@ -99,7 +99,7 @@ default_settings_state = {'enable_message_beep': True,
                           'turbo_cpu': False,
                           'enable_sdxl': False,
                           'sdxl_cpu': False,
-                          'ocr_device': False,}
+                          'ocr_device': False}
 
 for key, value in default_settings_state.items():
     if key not in st.session_state:
