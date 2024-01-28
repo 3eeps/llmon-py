@@ -13,20 +13,28 @@ from llmonpy import reconition
 
 with st.sidebar:
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
-    image_selected = st.selectbox(label='pick image', options=reconition.scan_dir(directory='./images'))
+
+    uploaded_file = st.file_uploader(label="Choose a image file")
+    if uploaded_file is not None:
+        st.session_state.bytes_data = uploaded_file.getvalue()
+    else:
+        st.session_state.buffer = ""
 
 if 'vision_encoder' not in st.session_state:
     reconition.popup_note(enable=st.session_state['enable_popups'])
     reconition.load_vision_encoder(enable_cpu=st.session_state['ocr_device'])
 
-moondream_prompt = st.text_input(label="image reconition with :orange[moondream1]")
+moondream_prompt = st.text_input(label="image reconition with :orange[moondream1]", value='can you describe this image?')
 send_prompt = st.button("submit")
 
-st.image(image=f"./images/{image_selected}", caption=re.sub("<$", "", re.sub("END$", "", st.session_state.buffer)), )
+if uploaded_file is not None:
+    st.image(image=st.session_state.bytes_data, caption=re.sub("<$", "", re.sub("END$", "", st.session_state.buffer)))
+else:
+    st.image(image=f"./llmonpy/pie.png", caption=re.sub("<$", "", re.sub("END$", "", st.session_state.buffer)))
 
 if send_prompt:
     start_time = time.time()
-    response = reconition.generate_response(image=image_selected, prompt=moondream_prompt)
+    response = reconition.generate_response(image_data=st.session_state.bytes_data, prompt=moondream_prompt)
 
     st.session_state.buffer = ""
     for word in response:
