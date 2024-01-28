@@ -6,7 +6,7 @@ from streamlit_extras.app_logo import add_logo
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
 st.title("model inference")
 if st.session_state['enable_voice']:
-    st.markdown(f"with :orange[***{st.session_state['model_select']}***] :green[+ xttsv2]!")
+    st.markdown(f"with :orange[**{st.session_state['model_select']}**] :green[+ xttsv2]!")
 else:
     st.markdown(f"with :orange[***{st.session_state['model_select']}***]")
 add_logo("./llmonpy/pie.png", height=130)
@@ -107,25 +107,12 @@ class AudioStream(Thread):
 def update_chat_template(prompt=str, template_type=str):
     template = template_type
 
-    if template_type == "alpaca_noro":
-        alpaca_noro = f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-        ### Instruction:
-        {prompt}
-
-        ### Response:"""
-        template_type = alpaca_noro
-
-    if template_type == "none":
-        none_type = f"""{prompt}"""
-        template_type = none_type
-
-    if template_type == "vicuna_based":
-        vicuna_based = f"""You are an AI who excells at being as helpful as possible to the users request.
+    if template_type == "vicuna_default":
+        vicuna_default = f"""You are an AI who excells at being as helpful as possible to the users request.
 
         USER: {prompt}
         ASSISTANT:"""
-        template = vicuna_based
+        template = vicuna_default
 
     if template_type == 'deepseek':
         deepseek = f"""You are an AI programming assistant, specializing in explaining Python code. You also have experience in using the Streamlit library.
