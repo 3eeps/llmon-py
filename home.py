@@ -23,8 +23,8 @@ voice_box_data = scan_dir('./voices')
 lora_list = scan_dir("./loras")
 
 # pull from text files?
-chat_templates = ['vicuna_based', 'deepseek', 'user_assist_rick', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci']
-model_names = ['Assistant', 'Dr. Rosenburg', 'Duke', 'Rick', 'Cortana', 'Kyle Katarn', 'Art Bell', 'Bot', 'AI', 'Model', 'Johnny 5', 'Codebot']
+chat_templates = ['vicuna_default', 'deepseek', 'user_assist_rick', 'user_assist_duke', 'ajibawa_python', 'user_assist_art', 'user_assist_kyle', 'user_assist_hlsci']
+model_names = ['Johnny 5', 'Dr. Rosenburg', 'Duke Nukem', 'Rick', 'Cortana', 'Kyle Katarn', 'Art Bell']
 default_context_list = [128, 256, 512, 1024, 2048, 4096, 8096, 16384, 32768]
 default_max_context_list = [2048, 4096, 8096, 16384, 32768]
 
@@ -188,7 +188,7 @@ with tab4:
 
 st.json(st.session_state, expanded=False)
 
-# pickle state, dont include the following vars and then unpickle? may drp thes from the session state
+# pickle state, dont include the following vars and then unpickle? may drop them from the session state better
 if st.session_state.clear_vram:
     try:
         del st.session_state.vision_encoder
