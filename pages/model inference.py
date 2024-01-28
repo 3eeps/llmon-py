@@ -55,7 +55,7 @@ def popup_note(message=str):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if 'model' not in st.session_state and st.session_state['enable_voice']:# or st.session_state.config == None:
+if 'model' not in st.session_state and st.session_state['enable_voice']:
     popup_note(message='😤 hyping up tts model...')
     st.session_state.config = XttsConfig()
     st.session_state.config.load_json("./speech models/xtts/config.json")
@@ -75,7 +75,7 @@ if st.session_state['enable_voice']:
     gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{chat_model_voice_path}"])
     warmup_tts = st.session_state.model.inference_stream(text=warmup_string, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=warmup_chunk_size)
 
-if 'chat_model' not in st.session_state: # or st.session_state['chat_model'] == None:
+if 'chat_model' not in st.session_state:
     popup_note(message='😴 waking up chat model...')
     logits_list = str
     st.session_state.chat_model = Llama(model_path=chat_model_path, logits_all=reveal_logits, n_batch=st.session_state['batch_size'], n_threads=st.session_state['cpu_core_count'], n_threads_batch=st.session_state['cpu_batch_count'], n_gpu_layers=st.session_state['gpu_layer_count'], n_ctx=st.session_state['max_context'], verbose=st.session_state['verbose_chat'])
