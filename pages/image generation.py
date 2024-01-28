@@ -1,5 +1,4 @@
 # ./codespace/pages/image generation.py
-
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
 from st_keyup import st_keyup
@@ -8,10 +7,10 @@ st.set_page_config(page_title="image generation", page_icon="🍋", layout="wide
 st.title("image generation")
 add_logo("./llmonpy/pie.png", height=130)
 
-from llmonpy import generation
+from llmonpy import generation, llmonaid
 
-image_list = generation.scan_dir('./images')
-lora_list = generation.scan_dir("./loras")
+image_list = llmonaid.scan_dir('./images')
+lora_list = llmonaid.scan_dir("./loras")
 
 with st.sidebar:
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
@@ -23,15 +22,15 @@ with st.sidebar:
         iter_count = st.slider('number of images', 1, 32, 1)
 
 if 'image_pipe_turbo' not in st.session_state and st.session_state['enable_sdxl_turbo']:
-    generation.popup_note(message='👊 hiting up sdxl turbo...')
+    llmonaid.popup_note(message='👊 hiting up sdxl turbo...')
     generation.load_sdxl_turbo()
 
 if 'image_pipe_sdxl' not in st.session_state and st.session_state['enable_sdxl']:
-    generation.popup_note(message='👊 hiting up sdxl 1.O...')
+    llmonaid.popup_note(message='👊 hiting up sdxl 1.O...')
     generation.load_sdxl()
 
 if 'img2img_pipe' not in st.session_state and st.session_state['img2img_on']:
-    generation.popup_note(message='👊 hiting up sdxl turbo img2img...')
+    llmonaid.popup_note(message='👊 hiting up sdxl turbo img2img...')
     generation.load_turbo_img2img()
 
 if st.session_state['enable_sdxl_turbo']:
