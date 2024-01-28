@@ -8,7 +8,7 @@ SDXL 1.0 and SDXL Turbo (and Turbo img2img) integrated.
 
 moondream1 image OCR intergrated.
 
-Fast. Easy to use.
+Fast. Easy to use. Recommend 16GB (nvidia) GPU.
 
 to launch: streamlit run x:\filedir\home.py 
 ![image](https://github.com/3eeps/llmon-py/assets/55860052/e86a181e-c76f-4150-8ead-c440a29a200d)
