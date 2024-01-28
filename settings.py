@@ -114,10 +114,12 @@ with tab1:
     st.session_state['enable_voice'] = st.toggle('enable tts model', value=st.session_state['enable_voice'])
     if st.session_state['enable_voice'] == True:
         tts_coding_button = False
+        disable_cpu_button = False
     else:
         tts_coding_button = True
+        disable_cpu_button = True
 
-    st.session_state['tts_cpu'] = st.toggle('run xtts on cpu', value=st.session_state['tts_cpu'], key='tts_on_cpu')
+    st.session_state['tts_cpu'] = st.toggle('run xtts on cpu', value=st.session_state['tts_cpu'], key='tts_on_cpu', disabled=disable_cpu_button)
     st.session_state['enable_code_voice'] = st.toggle('enable tts coding mode', value=st.session_state['enable_code_voice'], disabled=tts_coding_button)
     st.session_state['user_audio_length'] = st.slider("microphone rec time(sec)", 2, 25, st.session_state['user_audio_length'])
 
