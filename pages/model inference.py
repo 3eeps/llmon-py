@@ -1,5 +1,4 @@
 # ./codespace/pages/model inference.py
-
 import streamlit as st
 from streamlit_extras.app_logo import add_logo 
 
@@ -8,27 +7,26 @@ st.title("model inference")
 if st.session_state['enable_voice']:
     st.markdown(f"with :orange[**{st.session_state['model_select']}**] :green[+ xttsv2]!")
 else:
-    st.markdown(f"with :orange[***{st.session_state['model_select']}***]")
+    st.markdown(f"with :orange[**{st.session_state['model_select']}**]")
 add_logo("./llmonpy/pie.png", height=130)
 
 import os
 import time
-import warnings
 from threading import Thread
 import torch
 from TTS.tts.configs.xtts_config import XttsConfig
 from TTS.tts.models.xtts import Xtts 
 from llama_cpp import Llama
 from pywhispercpp.model import Model
-import torchaudio
 import simpleaudio
+import torchaudio
 import sounddevice 
 from scipy.io.wavfile import write as write_wav
+from llmonpy import llmonaid
 
-os.system('cls')
+llmonaid.clear_console()
+
 torch.set_num_threads(st.session_state['torch_audio_cores'])
-warnings.filterwarnings('ignore')
-
 chat_model_path = f"./models/{st.session_state['model_select']}"
 chat_model_voice_path = f"./voices/{st.session_state['voice_select']}"
 reveal_logits = True
@@ -48,38 +46,34 @@ channels = 2
 dim = 0
 popup_delay = 1.0
 
-def popup_note(message=str):
-    if st.session_state['enable_popups']:
-        st.toast(message)
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if 'model' not in st.session_state and st.session_state['enable_voice']:
-    popup_note(message='😤 hyping up tts model...')
-    st.session_state.config = XttsConfig()
-    st.session_state.config.load_json("./speech models/xtts/config.json")
-    st.session_state.model = Xtts.init_from_config(st.session_state.config)
-    st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./speech models/xtts")
+    llmonaid.popup_note(message='😤 hyping up tts model...')
+    st.session_state['config'] = XttsConfig()
+    st.session_state['config'].load_json("./speech models/xtts/config.json")
+    st.session_state['model'] = Xtts.init_from_config(st.session_state.config)
+    st.session_state['model'].load_checkpoint(st.session_state.config, checkpoint_dir="./speech models/xtts")
     if st.session_state['tts_cpu']:
-        st.session_state.model.cpu()
+        st.session_state['model'].cpu()
     else:
-        st.session_state.model.cuda()
+        st.session_state['model'].cuda()
 
 if 'speech_tt_model' not in st.session_state and st.session_state['enable_microphone']:
-    popup_note(message='😎 lets get it stt model!')
+    llmonaid.popup_note(message='😎 lets get it stt model!')
     st.session_state.user_voice_prompt = None
-    st.session_state.speech_tt_model = Model(models_dir=speech_model_path)
+    st.session_state['speech_tt_model'] = Model(models_dir=speech_model_path)
 
 if st.session_state['enable_voice']:
     gpt_cond_latent, speaker_embedding = st.session_state.model.get_conditioning_latents(audio_path=[f"{chat_model_voice_path}"])
-    warmup_tts = st.session_state.model.inference_stream(text=warmup_string, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=warmup_chunk_size)
+    warmup_tts = st.session_state['model'].inference_stream(text=warmup_string, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=warmup_chunk_size)
 
 if 'chat_model' not in st.session_state:
-    popup_note(message='😴 waking up chat model...')
+    llmonaid.popup_note(message='😴 waking up chat model...')
     logits_list = str
-    st.session_state.chat_model = Llama(model_path=chat_model_path, logits_all=reveal_logits, n_batch=st.session_state['batch_size'], n_threads=st.session_state['cpu_core_count'], n_threads_batch=st.session_state['cpu_batch_count'], n_gpu_layers=st.session_state['gpu_layer_count'], n_ctx=st.session_state['max_context'], verbose=st.session_state['verbose_chat'])
-    warmup_chat = st.session_state.chat_model(prompt=chat_warmup_prompt)
+    st.session_state['chat_model'] = Llama(model_path=chat_model_path, logits_all=reveal_logits, n_batch=st.session_state['batch_size'], n_threads=st.session_state['cpu_core_count'], n_threads_batch=st.session_state['cpu_batch_count'], n_gpu_layers=st.session_state['gpu_layer_count'], n_ctx=st.session_state['max_context'], verbose=st.session_state['verbose_chat'])
+    warmup_chat = st.session_state['chat_model'](prompt=chat_warmup_prompt)
 
 class AudioStream(Thread):
     def __init__(self):
@@ -176,7 +170,7 @@ def update_chat_template(prompt=str, template_type=str):
     return template
 
 def wav_by_chunk(chunks, token_count=int):
-    popup_note(message='😁 generating audio...')
+    llmonaid.popup_note(message='😁 generating audio...')
     wav_chunks = []
     all_chunks = []
     chunk_buffer = st.session_state['chunk_pre_buffer']
@@ -217,10 +211,6 @@ def get_paragraph_before_code(sentence, stop_word):
         result.append(word)
     return ' '.join(result)
 
-def message_boop():
-    message_boop = simpleaudio.WaveObject.from_wave_file("./llmonpy/chat_pop.wav")
-    message_boop.play()
-
 with st.sidebar:
     notepad = st.text_area(label='notepad', label_visibility='collapsed')
     if st.session_state['enable_microphone']:
@@ -246,11 +236,11 @@ if user_text_prompt := st.chat_input(input_message):
     with st.chat_message(name="user", avatar='🙅'):
         st.markdown(user_prompt)
     st.session_state.messages.append({"role": "user", "content": user_prompt})
-    message_boop()
+    llmonaid.message_boop()
 
-    popup_note(message='🍋 generating response...')
+    llmonaid.popup_note(message='🍋 generating response...')
     llm_start = time.time()
-    model_output = st.session_state.chat_model(prompt=final_prompt, max_tokens=st.session_state['max_context_prompt'], logprobs=log_probs)
+    model_output = st.session_state['chat_model'](prompt=final_prompt, max_tokens=st.session_state['max_context_prompt'], logprobs=log_probs)
     model_response = f"{st.session_state['char_name']}: {model_output['choices'][0]['text']}"
 
     if st.session_state['verbose_chat']:
@@ -263,14 +253,14 @@ if user_text_prompt := st.chat_input(input_message):
         st.markdown(model_response)
         st.json(st.session_state, expanded=False)
     st.session_state.messages.append({"role": "assistant", "content": model_response})
-    message_boop()
+    llmonaid.message_boop()
 
     if st.session_state['enable_voice']:
         tts_start = time.time()
         if st.session_state['enable_code_voice']:
             get_paragraph = get_paragraph_before_code(sentence=model_output['choices'][0]['text'], stop_word='```')
-            paragraph = st.session_state.model.inference_stream(text=get_paragraph, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=code_stream_chunk_size)
+            paragraph = st.session_state['model'].inference_stream(text=get_paragraph, language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=code_stream_chunk_size)
             wav_by_chunk(chunks=paragraph, token_count=int(model_output['usage']['total_tokens']))
         else:
-            chunk_inference = st.session_state.model.inference_stream(text=model_output['choices'][0]['text'], language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=st.session_state['stream_chunk_size'], enable_text_splitting=True)
+            chunk_inference = st.session_state['model'].inference_stream(text=model_output['choices'][0]['text'], language=language, gpt_cond_latent=gpt_cond_latent, speaker_embedding=speaker_embedding, stream_chunk_size=st.session_state['stream_chunk_size'], enable_text_splitting=True)
             wav_by_chunk(chunks=chunk_inference, token_count=int(model_output['usage']['total_tokens']))
