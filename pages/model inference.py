@@ -6,7 +6,7 @@ from streamlit_extras.app_logo import add_logo
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
 st.title("model inference")
 if st.session_state['enable_voice']:
-    st.markdown(f"with :orange[***{st.session_state['model_select']}***]   :green[+ xttsv2]!")
+    st.markdown(f"with :orange[***{st.session_state['model_select']}***] :green[+ xttsv2]!")
 else:
     st.markdown(f"with :orange[***{st.session_state['model_select']}***]")
 add_logo("./llmon_art/pie.png", height=130)
@@ -62,11 +62,10 @@ if 'model' not in st.session_state and st.session_state['enable_voice']:# or st.
     st.session_state.config.load_json("./xtts_config/config.json")
     st.session_state.model = Xtts.init_from_config(st.session_state.config)
     st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./xtts_config")
-    st.session_state.model.cuda()
-    
-#if 'summarizer' not in st.session_state:
-#    popup_note(message='😎 its game time summarizer!')
-#    st.session_state.summarizer = pipeline("summarization", model="./summarizer/t5-small")
+    if st.session_state['tts_cpu']:
+        st.session_state.model.cpu()
+    else:
+        st.session_state.model.cuda()
 
 if 'speech_tt_model' not in st.session_state and st.session_state['enable_microphone']:
     popup_note(message='😎 lets get it stt model!')
