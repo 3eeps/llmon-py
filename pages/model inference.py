@@ -217,9 +217,6 @@ def get_paragraph_before_code(sentence, stop_word):
         result.append(word)
     return ' '.join(result)
 
-def summarize_text(text=str):
-    return st.session_state.summarizer(text, max_length=230, min_length=30, do_sample=False)
-
 def message_boop():
     message_boop = simpleaudio.WaveObject.from_wave_file("./llmonpy/chat_pop.wav")
     message_boop.play()
