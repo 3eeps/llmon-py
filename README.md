@@ -4,7 +4,9 @@ Local Streamlit webui for Large Language Models. Supports GGUF.
 
 Inference with speech-to-text and text-to-speech supported.
 
-SDXL 1.0 and SDXL Turbo integrated.
+SDXL 1.0 and SDXL Turbo (and Turbo img2img) integrated.
+
+moondream1 image OCR intergrated.
 
 Fast. Easy to use.
 
