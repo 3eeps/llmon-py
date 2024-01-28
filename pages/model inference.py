@@ -9,7 +9,7 @@ if st.session_state['enable_voice']:
     st.markdown(f"with :orange[***{st.session_state['model_select']}***] :green[+ xttsv2]!")
 else:
     st.markdown(f"with :orange[***{st.session_state['model_select']}***]")
-add_logo("./llmon_art/pie.png", height=130)
+add_logo("./llmonpy/pie.png", height=130)
 
 import os
 import time
@@ -33,10 +33,9 @@ chat_model_path = f"./models/{st.session_state['model_select']}"
 chat_model_voice_path = f"./voices/{st.session_state['voice_select']}"
 reveal_logits = True
 log_probs = 5
-message_wav = 'chat_pop.wav'
 language = 'en'
 stt_threads = 10
-speech_model_path = './pywhisper_models'
+speech_model_path = './speech models'
 warmup_string = 'warmup string'
 chat_warmup_prompt = 'hello!'
 bits_per_sample = 16
@@ -59,9 +58,9 @@ if "messages" not in st.session_state:
 if 'model' not in st.session_state and st.session_state['enable_voice']:# or st.session_state.config == None:
     popup_note(message='😤 hyping up tts model...')
     st.session_state.config = XttsConfig()
-    st.session_state.config.load_json("./xtts_config/config.json")
+    st.session_state.config.load_json("./speech models/xtts/config.json")
     st.session_state.model = Xtts.init_from_config(st.session_state.config)
-    st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./xtts_config")
+    st.session_state.model.load_checkpoint(st.session_state.config, checkpoint_dir="./speech models/xtts")
     if st.session_state['tts_cpu']:
         st.session_state.model.cpu()
     else:
@@ -235,7 +234,7 @@ def summarize_text(text=str):
     return st.session_state.summarizer(text, max_length=230, min_length=30, do_sample=False)
 
 def message_boop():
-    message_boop = simpleaudio.WaveObject.from_wave_file(f"./ui-tones/{message_wav}")
+    message_boop = simpleaudio.WaveObject.from_wave_file("./llmonpy/chat_pop.wav")
     message_boop.play()
 
 with st.sidebar:
