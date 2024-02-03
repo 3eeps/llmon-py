@@ -21,13 +21,13 @@ if st.session_state['approved_login'] == False:
     username = st.text_input("username")
     password = st.text_input("password", type="password")
     login_button = st.button('sign in')
-    if login_button == True and username == "chad" and password == "chadc":
+    if login_button == True and username == "" and password == "":
         llmonaid.popup_note(message=f"you have logged in {username}!")
         st.session_state['approved_login'] = True    
         st.session_state['user_type'] = 'admin'
         llmonaid.init_state(model_box_data, voice_box_data, chat_templates, user_type=st.session_state['user_type'])
         st.rerun()
-    if login_button == True and username == "mikey" and password == "mikey42069":
+    if login_button == True and username == "" and password == "":
         llmonaid.popup_note(message=f"you have logged in {username}!")
         st.session_state['approved_login'] = True    
         st.session_state['user_type'] = 'user_basic'
