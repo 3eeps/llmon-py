@@ -1,27 +1,58 @@
-# ./codespace/llmon/reconition.py
+# ./codespace/pages/image reconition.py
 import streamlit as st
-import os
-from moondream import VisionEncoder, TextModel
-from PIL import Image
-from threading import Thread
-from transformers import TextIteratorStreamer
+from streamlit_extras.app_logo import add_logo
 
-image_ocr_model_path = "c:\codespace\moondream\moondream1"
+st.set_page_config(page_title="image reconition", page_icon="🍋", layout="wide", initial_sidebar_state="auto")
+st.title("🍋image reconition")
+add_logo("./llmonpy/pie.png", height=130)
 
-def load_vision_encoder(enable_cpu=bool):
-    st.session_state['vision_encoder'] = VisionEncoder(image_ocr_model_path, run_on=enable_cpu)
-    st.session_state['text_model'] = TextModel(image_ocr_model_path, run_on=enable_cpu)
+if st.session_state['approved_login'] == True and st.session_state['enable_ocr'] == True:
 
-def generate_response(image_data, prompt=str):
-    filename = "ocr_upload_image.png"
-    with open(filename, 'wb') as file:
-        file.write(image_data)
-    image = Image.open("ocr_upload_image.png")
+    import re
+    from llmonpy import reconition, llmonaid
+    import GPUtil as GPU
+    import psutil
 
-    image_embeds = st.session_state['vision_encoder'](image)
-    streamer = TextIteratorStreamer(st.session_state['text_model'].tokenizer, skip_special_tokens=True)
-    generation_kwargs = dict(image_embeds=image_embeds, question=prompt, streamer=streamer)
-    thread = Thread(target=st.session_state['text_model'].answer_question, kwargs=generation_kwargs)
-    thread.start()
-    os.remove("ocr_upload_image.png")
-    return streamer
+    st.markdown("image reconition with :orange[moondream1]")
+    with st.sidebar:
+        st.session_state['notepad'] = st.text_area(label='notepad', label_visibility='collapsed', value=st.session_state['notepad'])
+        uploaded_file = st.file_uploader(label="Choose a image file")
+        if uploaded_file is not None:
+            st.session_state.bytes_data = uploaded_file.getvalue()
+
+    if 'vision_encoder' not in st.session_state:
+        llmonaid.popup_note(message='🌒 looking up at you, moondream...')
+        reconition.load_vision_encoder(enable_cpu=st.session_state['ocr_device'])
+
+    GPUs = GPU.getGPUs()
+    gpu = GPUs[0]
+    mem_total = 100 / gpu.memoryTotal
+    mem_used = 100 / int(gpu.memoryUsed)
+    total_ = mem_total / mem_used
+    if  total_> 85.0:
+        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :red[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
+    else:
+        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :green[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
+
+    memory_usage = psutil.virtual_memory()
+    if memory_usage.percent > 85.0:
+        st.progress((memory_usage.percent / 100), f'system memory usage: :red{memory_usage.percent}%]')
+    else:
+        st.progress((memory_usage.percent / 100), f'system memory usage: :green[{memory_usage.percent}%]')
+
+    if uploaded_file is not None:
+        st.image(image=st.session_state.bytes_data)
+        st.write_stream(llmonaid.stream_text(text=re.sub("<$", "", re.sub("END$", "", st.session_state.buffer))))
+      
+    user_input = st.chat_input("ask questions about your images")
+    if user_input:
+        response = reconition.generate_response(image_data=st.session_state.bytes_data, prompt=user_input)
+        st.session_state.buffer = ""
+        for word in response:
+            st.session_state.buffer += word
+        st.rerun()
+if st.session_state['approved_login'] == False:
+    st.image('./llmonpy/pie.png', caption='please login to continue')
+if st.session_state['enable_ocr'] == False:
+    st.image('./llmonpy/pie.png', caption="enable from the 'home' page to use")
+st.session_state.buffer = ""

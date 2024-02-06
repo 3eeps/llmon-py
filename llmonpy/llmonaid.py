@@ -3,7 +3,6 @@ import streamlit as st
 import os
 import pickle
 import torch
-import warnings
 import simpleaudio
 import torchaudio
 from threading import Thread
@@ -23,7 +22,7 @@ class AudioStream(Thread):
         self.run_thread = True
         self.counter = 0
         self.start()
-        self.wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.counter}.wav")
+        #self.wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.counter}.wav")
 
     def run(self):
         while self.run_thread:
@@ -33,9 +32,34 @@ class AudioStream(Thread):
                 play_audio.wait_done()
                 os.remove(f"xtts_stream{self.counter}.wav")
             except:
-                pass#self.run_thread = False
+                self.run_thread = False
             
             self.counter += 1
+
+def attempt_login(model_box_data=list, voice_box_data=list, lora_list=list, chat_templates=list):
+    if st.session_state['approved_login'] == False:
+        st.write("login to access llmon-py")
+        username = st.text_input("username")
+        password = st.text_input("password", type="password")
+        login_button = st.button('sign in')
+        if login_button == True and username == "chad" and password == "chad420":
+            st.session_state['approved_login'] = True    
+            st.session_state['user_type'] = 'admin'
+
+        if login_button == True and username == "mikey" and password == "mikey420":
+            st.session_state['approved_login'] = True    
+            st.session_state['user_type'] = 'user_basic'
+
+        if st.session_state['approved_login']:
+            popup_note(message=f"you have logged in {username}!")
+            init_state(model_box_data, voice_box_data, lora_list, chat_templates)
+            st.rerun()
+        password = ""
+
+def stream_text(text=str):
+    for word in text.split():
+        yield word + " "
+        time.sleep(0.08)
 
 def get_paragraph_before_code(sentence, stop_word):
     words = sentence.split()
@@ -55,9 +79,12 @@ def wav_by_chunk(chunks, token_count=int):
         #all_chunks.append(chunk)
         wav = torch.cat(wav_chunks, dim=dim)
         torchaudio.save(f"xtts_stream{i}.wav", wav.squeeze().unsqueeze(0).cpu(), sample_rate=chunk_sample_rate, encoding=encoding_type, bits_per_sample=bits_per_sample)
-        if i == st.session_state['chunk_pre_buffer']:
+        if token_count < 50 and i == 1:
             AudioStream()
-        wav_chunks = []
+        else:
+            if i == st.session_state['chunk_pre_buffer']:
+                AudioStream()
+            wav_chunks = []
     #full_wav = torch.cat(all_chunks, dim=dim)
     #torchaudio.save("xtts_stream_full.wav", full_wav.squeeze().unsqueeze(0).cpu(), sample_rate=chunk_sample_rate, encoding=encoding_type, bits_per_sample=bits_per_sample)
     #all_chunks = []
@@ -149,82 +176,76 @@ def exclude_id(model=str):
     return {key: value for key, value in st.session_state.items() if key != model}
 
 def clear_vram():
-    model_list = ['vision_encoder', 'text_model', 'model', 'config', 'chat_model', 'speech_tt_model', 'image_pipe_turbo']
+    model_list = ['vision_encoder', 'text_model', 'xtts_model', 'xtts_config', 'chat_model', 'speech_tt_model', 'image_pipe_turbo', 'image_pipe_sdxl', 'img2img_pipe']
+    print('start: clear vram')
     for model in model_list:
-        print('start: clear vram')
         try:
             del st.session_state[model]
+            print(f'clear: {model}')
             with open('llmon-py_state.pickle', 'wb') as f:
                 pickle.dump(exclude_id(model), f)
-        except:
-            pass
-    try:
-        with open("llmon-py_state.pickle",'rb') as f:
-            st.session_state = pickle.dump(f)
-    except:
-        pass
-    try:
-        os.remove('llmon-py_state.pickle')
-    except:
-        pass
-    torch.cuda.empty_cache()
-    print ('end: clear vram: done')
+            time.sleep(0.5)
 
-def init_state(model_box_data=list, voice_box_data=list, chat_template_data=list, user_type=str):
-    if user_type == 'admin':
-        default_settings_state =  {'enable_microphone': False,
-                                    'enable_voice': False,
-                                    'enable_code_voice': False,
-                                    'user_audio_length': 8,
-                                    'voice_select': voice_box_data[0],
-                                    'model_select': model_box_data[0],
-                                    'template_select': chat_template_data[0],
-                                    'verbose_chat': True,
-                                    'max_context_prompt': 2048,
-                                    'max_context': 4096,
-                                    'torch_audio_cores': 8,
-                                    'gpu_layer_count': -1,
-                                    'cpu_core_count': 8,
-                                    'cpu_batch_count': 8,
-                                    'batch_size': 256,
-                                    'stream_chunk_size': 35,
-                                    'chunk_pre_buffer': 3,
-                                    'enable_sdxl_turbo': False,
-                                    'img2img_on': False,
-                                    'enable_sdxl': False,
-                                    'enable_ocr': False,
-                                    'ocr_device': False}
-    if user_type == 'user_basic':
-        default_settings_state =  {'enable_microphone': False,
-                                    'enable_voice': False,
-                                    'enable_code_voice': False,
-                                    'user_audio_length': 8,
-                                    'voice_select': voice_box_data[0],
-                                    'model_select': model_box_data[0],
-                                    'template_select': chat_template_data[0],
-                                    'verbose_chat': True,
-                                    'max_context_prompt': 1024,
-                                    'max_context': 4096,
-                                    'torch_audio_cores': 8,
-                                    'gpu_layer_count': -1,
-                                    'cpu_core_count': 8,
-                                    'cpu_batch_count': 8,
-                                    'batch_size': 256,
-                                    'stream_chunk_size': 35,
-                                    'chunk_pre_buffer': 3,
-                                    'enable_sdxl_turbo': False,
-                                    'img2img_on': False,
-                                    'enable_sdxl': False,
-                                    'enable_ocr': False,
-                                    'ocr_device': False}
+            with open("llmon-py_state.pickle",'rb') as f:
+                st.session_state = pickle.dump(f)
+            os.remove('llmon-py_state.pickle')
+        except:
+            print(f"{model} not loaded")
+            pass
+    torch.cuda.empty_cache()
+    print ('end: clear vram')
+
+def load_session():
+    with open("llmon-py_state.pickle",'rb') as f:
+        st.session_state = pickle.dump(f)
+
+def save_session():
+    clear_vram()
+    with open('last_saved_session_state.pickle', 'wb') as f:
+        pickle.dump(exclude_id(st.session_state), f)
+        time.sleep(0.5)
+
+def init_state(model_box_data=list, voice_box_data=list, lora_list=list, chat_template_data=list):
+    default_settings_state =  {'enable_microphone': False,
+                                'enable_voice': False,
+                                'enable_code_voice': False,
+                                'user_audio_length': 8,
+                                'voice_select': voice_box_data[0],
+                                'model_select': model_box_data[0],
+                                'lora_selected': lora_list[0],
+                                'template_select': chat_template_data[0],
+                                'verbose_chat': True,
+                                'max_context_prompt': 2048,
+                                'max_context': 4096,
+                                'torch_audio_cores': 8,
+                                'gpu_layer_count': -1,
+                                'cpu_core_count': 8,
+                                'cpu_batch_count': 8,
+                                'batch_size': 256,
+                                'stream_chunk_size': 35,
+                                'chunk_pre_buffer': 5,
+                                'enable_sdxl_turbo': False,
+                                'img2img_on': False,
+                                'enable_sdxl': False,
+                                'enable_ocr': False,
+                                'ocr_device': False}
         
+    st.session_state['notepad'] = ""
+
+    st.session_state.bytes_data = None
+
+    st.session_state['img2img_on'] = True
+    st.session_state['sdxl_steps'] = 50
+    st.session_state['turbo_prompt'] = ""
+    st.session_state['sdxl_prompt'] = ""
+    #st.session_state['img2img_prompt'] = ""
+
     for key, value in default_settings_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
 
 def clear_console():
-    os.system('cls')
-    warnings.filterwarnings('ignore')
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def message_boop():
     if st.session_state['user_type'] == 'admin':
@@ -233,7 +254,7 @@ def message_boop():
 
 def clear_buffers():
     st.session_state.bytes_data = None
-    st.session_state.buffer = ""
+    #st.session_state.buffer = ""
 
 def check_user_type():
     disable_option = False

@@ -9,8 +9,8 @@ from transformers import TextIteratorStreamer
 image_ocr_model_path = "c:\codespace\moondream\moondream1"
 
 def load_vision_encoder(enable_cpu=bool):
-    st.session_state['vision_encoder'] = VisionEncoder(image_ocr_model_path, run_on=enable_cpu)
-    st.session_state['text_model'] = TextModel(image_ocr_model_path, run_on=enable_cpu)
+    st.session_state['vision_encoder'] = VisionEncoder(image_ocr_model_path, run_on_cpu=enable_cpu)
+    st.session_state['text_model'] = TextModel(image_ocr_model_path, run_on_cpu=enable_cpu)
 
 def generate_response(image_data, prompt=str):
     filename = "ocr_upload_image.png"
