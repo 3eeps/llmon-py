@@ -38,5 +38,5 @@ if st.session_state['approved_login'] == True and st.session_state['enable_ocr']
 if st.session_state['approved_login'] == False:
     st.image('./llmonpy/pie.png', caption='please login to continue')
 if st.session_state['enable_ocr'] == False:
-    st.image('./llmonpy/pie.png', caption="enable from the 'home' page to use")
+    st.image('./llmonpy/pie.png', caption="enable a vision model to continue")
 st.session_state.buffer = ""

@@ -9,6 +9,7 @@ from threading import Thread
 import time
 import GPUtil as GPU
 import psutil
+import socket 
 
 language = 'en'
 bits_per_sample = 16
@@ -24,7 +25,6 @@ class AudioStream(Thread):
         self.run_thread = True
         self.counter = 0
         self.start()
-        #self.wav_object = simpleaudio.WaveObject.from_wave_file(f"xtts_stream{self.counter}.wav")
 
     def run(self):
         while self.run_thread:
@@ -35,7 +35,6 @@ class AudioStream(Thread):
                 os.remove(f"xtts_stream{self.counter}.wav")
             except:
                 self.run_thread = False
-            
             self.counter += 1
 
 def attempt_login(model_box_data=list, voice_box_data=list, lora_list=list, chat_templates=list):
@@ -48,9 +47,21 @@ def attempt_login(model_box_data=list, voice_box_data=list, lora_list=list, chat
             st.session_state['approved_login'] = True    
             st.session_state['user_type'] = 'admin'
 
+            #st.session_state['socket'] = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #create TCP/IP socket
+            #st.session_state['socket'].bind((socket.gethostname(), 8501)) #associate the socket with a specific network interface and port number
+            #st.session_state['socket'].listen(5) #wait for incoming connections (parameter is the maximum amount of queued connections)
+            #ListenServer()
+
         if login_button == True and username == "mikey" and password == "mikey420":
             st.session_state['approved_login'] = True    
             st.session_state['user_type'] = 'user_basic'
+
+            #st.session_state['socket'] = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #create TCP/IP socket
+            #clientsocket, address = st.session_state['socket'].accept() # accept any incoming connection
+           #print(f"Connection from {address} has been established.")
+            #clientsocket.send(bytes("hello server", "utf-8")) # send a welcome message to client
+            #msg = clientsocket.recv(4096) # receive message from client (maximum of 1024 bytes)
+            #print(msg.decode("utf-8")) # decode and print received message
 
         if st.session_state['approved_login']:
             popup_note(message=f"you have logged in {username}!")
@@ -178,6 +189,7 @@ def exclude_id(model=str):
     return {key: value for key, value in st.session_state.items() if key != model}
 
 def clear_vram():
+    
     model_list = ['vision_encoder', 'text_model', 'xtts_model', 'xtts_config', 'chat_model', 'speech_tt_model', 'image_pipe_turbo', 'image_pipe_sdxl', 'img2img_pipe']
     toggled_on_list = ['enable_voice', 'enable_microphone', 'enable_sdxl', 'enable_sdxl_turbo', 'img2img_on', 'enable_ocr', 'ocr_device']
     print('start: clear vram')

@@ -55,7 +55,6 @@ if st.session_state['approved_login']:
     llmonaid.memory_display()
     tab2, tab1, tab4, tab3 = st.tabs(["💭chat model", "🔊audio", '👀image gen/vison', "🔗advanced"])
     with tab1:
-        st.header("🔊audio")
         st.session_state['enable_microphone'] = st.toggle('enable microphone', value=st.session_state['enable_microphone'], disabled=llmonaid.check_user_type())
         st.session_state['enable_voice'] = st.toggle('enable tts model', value=st.session_state['enable_voice'], disabled=llmonaid.check_user_type())
         if st.session_state['enable_voice'] == True:
@@ -77,7 +76,6 @@ if st.session_state['approved_login']:
             st.audio(f"./voices/{st.session_state['voice_select']}")
 
     with tab2:
-        st.header("💭chat model")
         set_model_index = 0
         for key, value in model_box_dict.items():
             if value == st.session_state['model_select']:
@@ -92,7 +90,6 @@ if st.session_state['approved_login']:
         st.session_state['char_name'] = st.text_input(label='model name', value='Johnny 5')
 
     with tab3:
-        st.header("🔗advanced")
         st.session_state['verbose_chat'] = st.toggle('enable detailed inference info', value=st.session_state['verbose_chat'])
 
         set_max_context_index = 0
@@ -109,7 +106,6 @@ if st.session_state['approved_login']:
         st.session_state['chunk_pre_buffer'] = st.slider('chunk buffers', 0, 6, st.session_state['chunk_pre_buffer'], disabled=llmonaid.check_user_type())
     
     with tab4:
-        st.header("👀image gen/vision")
         st.header(":orange[sdxl] :red[turbo]")
         if st.session_state['enable_sdxl']:
             st.session_state['enable_sdxl_turbo'] = st.toggle('enable :orange[sdxl] :red[turbo]', value=st.session_state['enable_sdxl_turbo'], disabled=True)
@@ -122,7 +118,7 @@ if st.session_state['approved_login']:
         if st.session_state['enable_sdxl_turbo']:
             st.session_state['enable_sdxl'] = st.toggle('enable :orange[sdxl 1.0]', value=st.session_state['enable_sdxl'], disabled=True)
         else:
-            st.session_state['enable_sdxl'] = st.toggle('enable :orange[sdxl 1.0]', value=st.session_state['enable_sdxl'], disabled=True)
+            st.session_state['enable_sdxl'] = st.toggle('enable :orange[sdxl 1.0]', value=st.session_state['enable_sdxl'], disabled=False)
 
         set_lora_index = 0
         for key, value in lora_dict.items():

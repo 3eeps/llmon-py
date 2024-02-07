@@ -19,15 +19,13 @@ def load_sdxl_turbo():
 def load_turbo_img2img(): 
     st.session_state['img2img_pipe'] = AutoPipelineForImage2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16").to('cuda')
 
-def create_image_sdxl(prompt=str, steps=50): #iterations=1):
-    #while iterations:
-    image = st.session_state['image_pipe_sdxl'](prompt=prompt, num_inference_steps=50).images[0]
-    output_file_name = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-    image.save(f"{output_file_name}-{iterations}.png")
-    st.session_state['sdxl_image_list'].append(f"{output_file_name}-{iterations}.png")
-    iterations -= 1
-    if len(st.session_state['sdxl_image_list']) > 32:
-        st.session_state['sdxl_image_list'] = []
+def create_image_sdxl(prompt=str, steps=50, iterations=1):
+    while iterations:
+        image = st.session_state['image_pipe_sdxl'](prompt=prompt, num_inference_steps=50).images[0]
+        output_file_name = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+        image.save(f"{output_file_name}-{iterations}.png")
+        st.session_state['sdxl_image_list'].append(f"{output_file_name}-{iterations}.png")
+        iterations -= 1
     return st.session_state['sdxl_image_list']
 
 def create_image_turbo(prompt=str, steps=1):

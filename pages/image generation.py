@@ -46,11 +46,11 @@ if st.session_state['approved_login'] == True:
     #    generation.load_turbo_img2img()
 
     if st.session_state['enable_sdxl_turbo']:
-        st.session_state['turbo_prompt'] = st_keyup(label='real time(ish) image generation using sdxl turbo', debounce=1000, value=st.session_state['turbo_prompt']) 
+        st.session_state['turbo_prompt'] = st_keyup(label='real time(ish) image generation with sdxl turbo', debounce=1000, value=st.session_state['turbo_prompt'])
         generation.create_image_turbo(prompt=st.session_state['turbo_prompt'])
 
     if st.session_state['enable_sdxl']:
-        st.session_state['sdxl_prompt'] = st.text_input(label='image generation with sdxl 1.0', value=st.session_state['sdxl_prompt'])
+        st.session_state['sdxl_prompt'] = st.text_area(label='image generation with sdxl 1.0', value=st.session_state['sdxl_prompt'])
         if st.button('submit'):
             st.image(generation.create_image_sdxl(prompt=st.session_state['sdxl_prompt'], iterations=iter_count, steps=steps))
         
@@ -68,3 +68,5 @@ if st.session_state['approved_login'] == True:
 
 if st.session_state['approved_login'] == False:
     st.image('./llmonpy/pie.png', caption='please login to continue')
+if st.session_state['enable_sdxl'] == False and st.session_state['enable_sdxl_turbo'] == False:
+    st.image('./llmonpy/pie.png', caption="enable an image model to continue")
