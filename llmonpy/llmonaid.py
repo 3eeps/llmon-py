@@ -7,6 +7,8 @@ import simpleaudio
 import torchaudio
 from threading import Thread
 import time
+import GPUtil as GPU
+import psutil
 
 language = 'en'
 bits_per_sample = 16
@@ -177,7 +179,13 @@ def exclude_id(model=str):
 
 def clear_vram():
     model_list = ['vision_encoder', 'text_model', 'xtts_model', 'xtts_config', 'chat_model', 'speech_tt_model', 'image_pipe_turbo', 'image_pipe_sdxl', 'img2img_pipe']
+    toggled_on_list = ['enable_voice', 'enable_microphone', 'enable_sdxl', 'enable_sdxl_turbo', 'img2img_on', 'enable_ocr', 'ocr_device']
     print('start: clear vram')
+
+    for toggle in toggled_on_list:
+        if st.session_state[toggle]:
+            st.session_state[toggle] = False
+
     for model in model_list:
         try:
             del st.session_state[model]
@@ -234,7 +242,8 @@ def init_state(model_box_data=list, voice_box_data=list, lora_list=list, chat_te
 
     st.session_state.bytes_data = None
 
-    st.session_state['img2img_on'] = True
+    st.session_state['sdxl_image_list'] = []
+    #st.session_state['img2img_on'] = True
     st.session_state['sdxl_steps'] = 50
     st.session_state['turbo_prompt'] = ""
     st.session_state['sdxl_prompt'] = ""
@@ -243,6 +252,23 @@ def init_state(model_box_data=list, voice_box_data=list, lora_list=list, chat_te
     for key, value in default_settings_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+def memory_display():
+    GPUs = GPU.getGPUs()
+    gpu = GPUs[0]
+    mem_total = 100 / gpu.memoryTotal
+    mem_used = 100 / int(gpu.memoryUsed)
+    total_ = mem_total / mem_used
+    if  total_> 85.0:
+        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :red[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
+    else:
+        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :green[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
+
+    memory_usage = psutil.virtual_memory()
+    if memory_usage.percent > 85.0:
+        st.progress((memory_usage.percent / 100), f'system memory usage: :red{memory_usage.percent}%]')
+    else:
+        st.progress((memory_usage.percent / 100), f'system memory usage: :green[{memory_usage.percent}%]')
 
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')

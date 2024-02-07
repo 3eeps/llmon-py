@@ -16,7 +16,6 @@ if st.session_state['approved_login'] == True:
     import time
     import torch
     import warnings
-    import GPUtil as GPU
     from TTS.tts.configs.xtts_config import XttsConfig
     from TTS.tts.models.xtts import Xtts 
     from llama_cpp import Llama
@@ -24,7 +23,6 @@ if st.session_state['approved_login'] == True:
     import sounddevice
     from scipy.io.wavfile import write as write_wav
     from llmonpy import llmonaid
-    import psutil
 
     warnings.filterwarnings('ignore')
     torch.set_num_threads(st.session_state['torch_audio_cores'])
@@ -48,6 +46,7 @@ if st.session_state['approved_login'] == True:
         st.session_state['model_temperature'] = st.text_input(label='temperature', value=0.8)
         st.session_state['model_top_p'] = st.text_input(label='top p', value=0.95)
         st.session_state['model_top_k'] = st.text_input(label='top k', value=40)
+        st.session_state['model_min_p'] = st.text_input(label='min p', value=0.05)
         st.session_state['repeat_penalty'] = st.text_input(label='repeat_penalty', value=1.1)
 
     def voice_to_text():
@@ -99,21 +98,7 @@ if st.session_state['approved_login'] == True:
                                                 verbose=st.session_state['verbose_chat'])
         warmup_chat = st.session_state[f"chat_model"](prompt=warmup_string)
 
-    GPUs = GPU.getGPUs()
-    gpu = GPUs[0]
-    mem_total = 100 / gpu.memoryTotal
-    mem_used = 100 / int(gpu.memoryUsed)
-    total_ = mem_total / mem_used
-    if  total_> 85.0:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :red[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-    else:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :green[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-
-    memory_usage = psutil.virtual_memory()
-    if memory_usage.percent > 85.0:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :red{memory_usage.percent}%]')
-    else:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :green[{memory_usage.percent}%]')
+    llmonaid.memory_display()
 
     for message in st.session_state.messages:
         with st.chat_message(name=message["role"]):
@@ -134,7 +119,7 @@ if st.session_state['approved_login'] == True:
         #
         #
         #
-        llmonaid.save_session()
+        #llmonaid.save_session()
 
         user_prompt = user_text_prompt
         if user_text_prompt == "q" and st.session_state['enable_microphone']:
@@ -150,11 +135,12 @@ if st.session_state['approved_login'] == True:
         llm_start = time.time()
 
         model_output = st.session_state["chat_model"](prompt=final_prompt,
-                                                       max_tokens=st.session_state['max_context'], 
-                                                       top_k=int(st.session_state['model_top_k']),
-                                                       top_p=float(st.session_state['model_top_p']),
-                                                       temperature=float(st.session_state['model_temperature']),
-                                                       repeat_penalty=float(st.session_state['repeat_penalty']))
+                                                        repeat_penalty=float(st.session_state['repeat_penalty']),
+                                                        max_tokens=st.session_state['max_context'], 
+                                                        top_k=int(st.session_state['model_top_k']),
+                                                        top_p=float(st.session_state['model_top_p']),
+                                                        min_p=float(st.session_state['model_min_p']),
+                                                        temperature=float(st.session_state['model_temperature']))
         model_response = f"{st.session_state['char_name']}: {model_output['choices'][0]['text']}"
 
         if st.session_state['verbose_chat']:

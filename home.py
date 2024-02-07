@@ -7,8 +7,6 @@ st.title('🍋llmon-py')
 add_logo("./llmonpy/pie.png", height=130)
 
 from llmonpy import llmonaid
-import GPUtil as GPU
-import psutil
 
 model_box_data = llmonaid.scan_dir('./models')
 voice_box_data = llmonaid.scan_dir('./voices')
@@ -54,21 +52,7 @@ if st.session_state['approved_login']:
         counter += 1
 
     clear_vram = st.button('clear vram/ram')
-    GPUs = GPU.getGPUs()
-    gpu = GPUs[0]
-    mem_total = 100 / gpu.memoryTotal
-    mem_used = 100 / int(gpu.memoryUsed)
-    total_ = mem_total / mem_used
-    if  total_> 85.0:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :red[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-    else:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :green[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-
-    memory_usage = psutil.virtual_memory()
-    if memory_usage.percent > 85.0:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :red{memory_usage.percent}%]')
-    else:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :green[{memory_usage.percent}%]')
+    llmonaid.memory_display()
     tab2, tab1, tab4, tab3 = st.tabs(["💭chat model", "🔊audio", '👀image gen/vison', "🔗advanced"])
     with tab1:
         st.header("🔊audio")
@@ -153,4 +137,3 @@ if st.session_state['approved_login']:
     if clear_vram:
         llmonaid.clear_vram()
         st.rerun()
-st.json(st.session_state, expanded=False)

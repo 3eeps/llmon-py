@@ -10,8 +10,6 @@ if st.session_state['approved_login'] == True and st.session_state['enable_ocr']
 
     import re
     from llmonpy import reconition, llmonaid
-    import GPUtil as GPU
-    import psutil
 
     st.markdown("image reconition with :orange[moondream1]")
     with st.sidebar:
@@ -24,21 +22,7 @@ if st.session_state['approved_login'] == True and st.session_state['enable_ocr']
         llmonaid.popup_note(message='🌒 looking up at you, moondream...')
         reconition.load_vision_encoder(enable_cpu=st.session_state['ocr_device'])
 
-    GPUs = GPU.getGPUs()
-    gpu = GPUs[0]
-    mem_total = 100 / gpu.memoryTotal
-    mem_used = 100 / int(gpu.memoryUsed)
-    total_ = mem_total / mem_used
-    if  total_> 85.0:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :red[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-    else:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :green[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-
-    memory_usage = psutil.virtual_memory()
-    if memory_usage.percent > 85.0:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :red{memory_usage.percent}%]')
-    else:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :green[{memory_usage.percent}%]')
+    llmonaid.memory_display()
 
     if uploaded_file is not None:
         st.image(image=st.session_state.bytes_data)

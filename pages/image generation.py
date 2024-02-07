@@ -8,8 +8,6 @@ st.title("🍋image generation")
 add_logo("./llmonpy/pie.png", height=130)
 
 from llmonpy import generation, llmonaid
-import GPUtil as GPU
-import psutil
 
 if st.session_state['approved_login'] == True:
     lora_list = llmonaid.scan_dir("./loras")
@@ -17,21 +15,7 @@ if st.session_state['approved_login'] == True:
     iter_count = 1
     steps = 1
 
-    GPUs = GPU.getGPUs()
-    gpu = GPUs[0]
-    mem_total = 100 / gpu.memoryTotal
-    mem_used = 100 / int(gpu.memoryUsed)
-    total_ = mem_total / mem_used
-    if  total_> 85.0:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :red[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-    else:
-        st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "vram :green[{0:.0f}]/{1:.0f}gb".format(gpu.memoryUsed, gpu.memoryTotal))
-
-    memory_usage = psutil.virtual_memory()
-    if memory_usage.percent > 85.0:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :red{memory_usage.percent}%]')
-    else:
-        st.progress((memory_usage.percent / 100), f'system memory usage: :green[{memory_usage.percent}%]')
+    llmonaid.memory_display()
 
     with st.sidebar:
         st.session_state['notepad'] = st.text_area(label='notepad', label_visibility='collapsed', value=st.session_state['notepad'])
