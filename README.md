@@ -2,6 +2,7 @@
 
 Local Streamlit webui for Large Language Models. Supports GGUF. 
 
+Can be deployed using ngrok, in minutes.
 Inference with speech-to-text and text-to-speech supported.
 
 SDXL 1.0 and SDXL Turbo (and Turbo img2img) integrated.
