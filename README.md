@@ -2,12 +2,13 @@
 
 Local Streamlit webui for Large Language Models. Supports GGUF. 
 
-Can be deployed using ngrok, in minutes.
 Inference with speech-to-text and text-to-speech supported.
+
+Can be deployed using ngrok, in minutes.
 
 SDXL 1.0 and SDXL Turbo (and Turbo img2img) integrated.
 
-moondream1 image OCR intergrated.
+moondream1 (image vision) intergrated.
 
 Fast. Easy to use. Recommend 16GB (Nvidia) GPU.
  
