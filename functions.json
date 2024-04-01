@@ -1,0 +1,72 @@
+[
+  {
+    "name": "get_city_temp",
+    "description": "Get the temperature for a city.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string",
+          "description": "The city name to look up."
+        }
+      },
+      "required": ["city"]
+    }
+  },
+  {
+    "name": "get_stock_price",
+    "description": "Get the latest price of a stock.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "The stock symbol to look up."
+        }
+      },
+      "required": ["symbol"]
+    }
+  },
+  {
+    "name": "describe_image",
+    "description": "Answer questions about an image.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "user_query": {
+          "type": "string",
+          "description": "User inqury about the image."
+        }
+      },
+      "required": ["user_query"]
+    }
+  },
+  {
+    "name": "open_youtube",
+    "description": "Loads Youtube with the users query.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "serch_query": {
+          "type": "string",
+          "description": "User query to use with YouTube."
+        }
+      },
+      "required": ["search_query"]
+    }
+  },
+  {
+    "name": "get_world_news",
+    "description": "Get latest world news from CBC.ca.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "num_of_articles": {
+          "type": "string",
+          "description": "Number of articles to present."
+        }
+      },
+      "required": ["num_of_articles"]
+    }
+  }
+]
