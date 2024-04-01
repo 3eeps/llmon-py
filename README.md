@@ -9,4 +9,5 @@ Can be deployed using ngrok in minutes.
 moondream2 integrated!
 
 Recommend 16GB (Nvidia) GPU.
- ![image](https://github.com/3eeps/llmon-py/assets/55860052/95ded2e0-5485-4d2c-861e-14a480294a7c)
+![image](https://github.com/3eeps/llmon-py/assets/55860052/83ddd906-b27d-48c2-9ef5-ba761005ebd5)
+
