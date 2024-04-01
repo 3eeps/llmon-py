@@ -6,7 +6,7 @@ Inference with speech-to-text and text-to-speech, allows function calling!
 
 Can be deployed using ngrok in minutes.
 
-moondream2 intergrated.
+moondream2 integrated!
 
-Fast. Easy to use. Recommend 16GB (Nvidia) GPU. *works on my machine*
+Recommend 16GB (Nvidia) GPU.
  ![image](https://github.com/3eeps/llmon-py/assets/55860052/95ded2e0-5485-4d2c-861e-14a480294a7c)
