@@ -2,17 +2,11 @@
 
 Local Streamlit webui for Large Language Models. Supports GGUF. 
 
-Inference with speech-to-text and text-to-speech supported.
+Inference with speech-to-text and text-to-speech, allows function calling!
 
-Can be deployed using ngrok (llmon-py is not secure AT ALL), in minutes.
+Can be deployed using ngrok in minutes.
 
-SDXL 1.0 and SDXL Turbo (and Turbo img2img) integrated.
-
-moondream1 (image vision) intergrated.
+moondream2 intergrated.
 
 Fast. Easy to use. Recommend 16GB (Nvidia) GPU.
- 
-![image](https://github.com/3eeps/llmon-py/assets/55860052/c09737ea-7126-43fb-9b76-239f3af69563)
-![image](https://github.com/3eeps/llmon-py/assets/55860052/29798931-3476-4e20-aa65-262a5b49d3ea)
-![image](https://github.com/3eeps/llmon-py/assets/55860052/9a38c6f9-2b27-4e54-808e-21570a00707a)
-
+ ![image](https://github.com/3eeps/llmon-py/assets/55860052/95ded2e0-5485-4d2c-861e-14a480294a7c)
