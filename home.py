@@ -1,7 +1,6 @@
 # ./codespace/home.py
 import streamlit as st
 from llmonpy import llmonaid
-
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="centered", initial_sidebar_state="auto")
 st.title('🍋llmon-py')
 
@@ -46,12 +45,12 @@ for i in default_max_context_list:
     default_max_context_dict[counter] = default_max_context_list[counter]
     counter += 1
 
-clear_vram = st.button(label=':green[clear vram]')
 with st.sidebar:
     llmonaid.memory_display()
+    clear_vram = st.button(label=':green[clear vram]')
+    inference = st.switch_page('')
 tab2, tab1, tab3 = st.tabs(["💭chat", "🔊audio", '👀image'])
 with tab1:
-    st.session_state['enable_music'] = st.toggle(':orange[enable] :blue[facebook musicgen-medium]', value=st.session_state['enable_music'])
     st.session_state['enable_microphone'] = st.toggle(':orange[enable microphone]', value=st.session_state['enable_microphone'])
     st.session_state['enable_voice'] = st.toggle(':orange[enable] :green[xttsv2 tts]', value=st.session_state['enable_voice'])
     st.session_state['enable_voice_melo'] = st.toggle(':orange[enable] :blue[melotts]', value=st.session_state['enable_voice_melo'])
@@ -104,9 +103,9 @@ with tab2:
     st.session_state['gpu_layer_count'] = st.text_input(label=':orange[gpu layers]', value=st.session_state['gpu_layer_count'])
 
 with tab3:
-    st.session_state['enable_sdxl_turbo'] = st.toggle(':orange[enable sdxl] :red[turbo]', value=st.session_state['enable_sdxl_turbo'], disabled=False)
-    st.session_state['img2img_on'] = st.toggle(':orange[enable sdxl] :red[turbo] :rainbow[img2img]', value=st.session_state['img2img_on'], disabled=False)
-    st.session_state['enable_sdxl'] = st.toggle(':orange[enable] :violet[sdxl 1.0]', value=st.session_state['enable_sdxl'], disabled=False)
+    st.session_state['enable_sdxl_turbo'] = st.toggle(':orange[enable sdxl] :red[turbo]', value=st.session_state['enable_sdxl_turbo'], disabled=True)
+    st.session_state['img2img_on'] = st.toggle(':orange[enable sdxl] :red[turbo] :rainbow[img2img]', value=st.session_state['img2img_on'], disabled=True)
+    st.session_state['enable_sdxl'] = st.toggle(':orange[enable] :violet[sdxl 1.0]', value=st.session_state['enable_sdxl'], disabled=True)
     if st.session_state['enable_sdxl']:
         st.session_state['use_lora'] = st.toggle(':orange[enable lora]', value=st.session_state['use_lora'], disabled=False)
 
@@ -115,8 +114,6 @@ with tab3:
             if value == st.session_state['lora_selected']:
                 set_lora_index = key
         st.session_state['lora_selected'] = st.selectbox(':orange[lora for sdxl]', lora_list, index=set_lora_index)
-
-    st.session_state['enable_vision_deepseek'] = st.toggle(':orange[enable] :blue[deepseek-vl]', value=st.session_state['enable_vision_deepseek'])
 
 if clear_vram:
     llmonaid.clear_vram()

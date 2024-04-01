@@ -1,7 +1,6 @@
 # ./codespace/llmonpy/reconition.py
 import streamlit as st
 from PIL import Image
-import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def load_vision_encoder():

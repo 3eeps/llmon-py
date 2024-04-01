@@ -14,6 +14,12 @@ import sounddevice
 from scipy.io.wavfile import write as write_wav
 from gguf.gguf_reader import GGUFReader
 import base64
+import requests
+import bs4
+import json
+import webbrowser
+import datetime
+import feedparser
 
 language = 'en'
 bits_per_sample = 16
@@ -48,52 +54,17 @@ class AudioStream(Thread):
                 counter += 1
                 if exceptions == 6:
                     run_thread = False 
-             
-def melo_audio():
-    #wav_object = simpleaudio.WaveObject.from_wave_file('melo_tts.wav')
-    #play_audio = wav_object.play()
-    #play_audio.wait_done()
-    pass
 
-def melo_gen_message(message=str, token_count=int):
-    print(token_count)
+def melo_gen_message(message=str):
     output_path = 'melo_tts_playback.wav'
-    #if token_count < 1024:
-    st.session_state['melo_model'].tts_to_file(text=message, speaker_id=st.session_state['speaker_ids']['EN-AU'], output_path=output_path, speed=1.0)
-        #st.audio(data=output_path)
-        
+    st.session_state['melo_model'].tts_to_file(text=message, speaker_id=st.session_state['speaker_ids']['EN-BR'], output_path=output_path, speed=1.0)
+   
     with open(output_path, "rb") as f:
         data = f.read()
 
     audio_base64 = base64.b64encode(data).decode('utf-8')
     audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64,{audio_base64}">'
     st.markdown(audio_tag, unsafe_allow_html=True)
-    os.remove(output_path)
-
-def melo_audio_splitter():
-    pass
-
-def attempt_login(model_box_data=list, voice_box_data=list, lora_list=list, chat_templates=list):
-    if st.session_state['approved_login'] == False:
-        st.write("login to access llmon-py")
-        username = st.text_input("username")
-        password = st.text_input("password", type="password")
-        login_button = st.button('sign in')
-        if login_button == True and username == "chad" and password == "chad420":
-            st.session_state['approved_login'] = True    
-            st.session_state['user_type'] = 'admin'
-
-        if login_button == True and username == "user" and password == "userpass":
-            st.session_state['approved_login'] = True    
-            st.session_state['user_type'] = 'user_basic'
-
-        if login_button == True and username == "" and password == "":
-            st.session_state['approved_login'] = True    
-            st.session_state['user_type'] = 'admin'
-
-        if st.session_state['approved_login']:
-            init_state(model_box_data, voice_box_data, lora_list, chat_templates)
-            st.rerun()
 
 def split_sentence_on_word(sentence, stop_word):
     words = sentence.split()
@@ -102,22 +73,13 @@ def split_sentence_on_word(sentence, stop_word):
         if stop_word in word:
             break
         result.append(word)
+    #result.pop(0)
     return ' '.join(result)
 
 def stream_text(text=str):
     for word in text.split():
         yield word + " "
         time.sleep(0.08)
-
-def trim_message_list():
-    if (st.session_state['model_output_tokens'] + 384) > st.session_state['max_context']:
-        try:
-            last_message = len(st.session_state['message_list'])
-            st.session_state['message_list'].pop(last_message)
-            last_message = len(st.session_state['message_list'])
-            st.session_state['message_list'].pop(last_message)
-        except:
-            print("could not remove msgs from message_list")
 
 def wav_by_chunk(chunks, token_count=int):
     torch.set_num_threads(st.session_state['torch_audio_cores'])
@@ -140,25 +102,7 @@ def wav_by_chunk(chunks, token_count=int):
     torchaudio.save(f"xtts_streamFULL_{output_file_name}.wav", full_wav.squeeze().unsqueeze(0).cpu(), sample_rate=chunk_sample_rate, encoding=encoding_type, bits_per_sample=bits_per_sample)
     all_chunks = []
 
-def update_current_template(user_prompt=str, template_list=list, current_template=str):
-    system_message = ""
-    context_list = f"""Context List: {st.session_state['message_list']}"""
-    for template in template_list:
-        if template == current_template:
-            system_message = """You are an AI who excells at being as helpful as possible to the users request. Please check the Context List for additional context."""
-
-        default = f"""{system_message}
-        {context_list}
-
-        USER: {user_prompt}
-        ASSISTANT:"""
-        current_template = default
-
-
-
-
 def voice_to_text():
-        
         stt_threads = 10
         stt_channels = 2
         speech_model_path = './speech models'
@@ -175,34 +119,45 @@ def voice_to_text():
         combined_text = ' '.join(text_data)
         return combined_text
 
-def update_chat_template(prompt=str, template_type=str):
+def update_chat_template(prompt=str, template_type=str, function_result=""):
     template = template_type
 
-    if template_type == "chat_mistralx":
-        sys_mistral = f"""You are an AI who excels at being as helpful as possible to the users request. Conversation Context: {st.session_state['message_list']}"""
-        chat_mistral =f"""<|im_start|>system
+    if template_type == "code_mistral":
+  
+        sys_mistral = f"You are a programming assistant, who is helpful in explaining and creating Python code. Conversation Context: {st.session_state['message_list']}"
+        code_mistral =f"""<|im_start|>system
         {sys_mistral}<|im_end|>
         <|im_start|>user
         {prompt}<|im_end|>
         <|im_start|>assistant"""
-        template = chat_mistral
+        template = code_mistral
 
     if template_type == "chat_mistral":
-        chat_mistral = f"""<s>[INST]You are an AI who excels at being as helpful as possible to the users request. 
+        current_time = "Current date and time: {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+        chat_mistral = f"""<s>[INST]You are a helpful AI assistant with access to the following functions: 
+        Functions: {json.dumps(st.session_state.functions)}"
+        {current_time}
+        When the user asks a question that can be answered with one of the above functions, please only output the function filled with the appropriate data required as a python dictionary.
+        Although you can access functions which is helpful to the user, do not talk about the functions. Only use the functions when needed. 
         Conversation Context: {st.session_state['message_list']} 
 
         {prompt} [/INST]"""
         template = chat_mistral
 
+        if function_result:
+            chat_mistral = f"""<s>[INST]The user has asked this question: {prompt}. Provide this answer in a professional manner: {function_result} [/INST]"""
+            template = chat_mistral
+            function_result = None
+
     if template_type == "chat_mixtral_base":
-        chat_mixtral_base = f"""[INST]You are my AI best friend and assistant who helps me solve any kind of problem, from coding to questions about life. Interact with the user in a casual and fun way but always answer more serious questions from the user in a appropriate way.
+        chat_mixtral_base = f"""[INST]You are a AI as who helps me solve any kind of problem, from coding to questions about life. Interact with the user in a casual and fun way but always answer more serious questions from the user in a appropriate way.
         Conversation Context: {st.session_state['message_list']} 
 
         {prompt} [/INST]"""
         template = chat_mixtral_base
 
     if template_type == 'code_deepseek':
-        code_deepseek = f"""You are an AI programming assistant, specialized in explaining Python code by thinking step by step. Use the Context List below for conversation history.
+        code_deepseek = f"""You are an AI programming assistant, specialized in explaining Python code by thinking step by step. Use the Context List below for conversation history to help you look at past code and questions from yourself and the user.
         ### Instruction:
         Context List: {st.session_state['message_list']}
         {prompt}
@@ -242,12 +197,10 @@ def update_chat_template(prompt=str, template_type=str):
 
 def scan_dir(directory):
     directory_list = []
-    count = 0
     for file in os.scandir(f'{directory}'):
         if file.is_file():
             directory_list.append(file.name)
-            count += count
-    return directory_list
+    return directory_list or None
 
 def popup_note(message=str):
     st.toast(message)
@@ -256,9 +209,8 @@ def exclude_id(model=str):
     return {key: value for key, value in st.session_state.items() if key != model}
 
 def clear_vram(save_current_session=False):
-    
     model_list = ['melo_model', 'speaker_ids', 'moondream', 'xtts_model', 'xtts_config', 'chat_model', 'speech_tt_model', 'image_pipe_turbo', 'image_pipe_sdxl', 'img2img_pipe']
-    toggled_on_list = ['enable_voice', 'enable_voice_melo', 'enable_microphone', 'enable_sdxl', 'enable_sdxl_turbo', 'img2img_on', 'enable_vision']
+    toggled_on_list = ['enable_voice', 'enable_voice_melo', 'enable_microphone', 'enable_sdxl', 'enable_sdxl_turbo', 'img2img_on']
     print('start: clear vram')
 
     for toggle in toggled_on_list:
@@ -292,15 +244,6 @@ def clear_vram(save_current_session=False):
     st.session_state.bytes_data = None
     print ('end: clear vram')
 
-def load_session():
-    with open("llmon-py_state.pickle",'rb') as f:
-        st.session_state = pickle.dump(f)
-
-def save_session():
-    clear_vram(save_current_session=st.session_state['save_session'])
-    with open('llmon-py_state.pickle', 'wb') as f:
-        pickle.dump(exclude_id(st.session_state), f)
-
 def init_state(model_box_data=list, voice_box_data=list, lora_list=list, chat_template_data=list):
     default_settings_state =  {'enable_microphone': False,
                                 'enable_voice': False,
@@ -320,10 +263,9 @@ def init_state(model_box_data=list, voice_box_data=list, lora_list=list, chat_te
                                 'chunk_pre_buffer': 5,
                                 'enable_sdxl_turbo': False,
                                 'img2img_on': False,
-                                'enable_sdxl': False,
-                                'enable_vision': False, 
-                                'enable_vision_deepseek': False}
+                                'enable_sdxl': False}
     
+    st.session_state.function_results = ""
     st.session_state['loader_type'] = 'llama-cpp-python'
 
     st.session_state['use_lora'] = False
@@ -348,9 +290,9 @@ def init_state(model_box_data=list, voice_box_data=list, lora_list=list, chat_te
     st.session_state['img2img_iter_count'] = 1
 
     st.session_state['model_temperature'] = 0.85
-    st.session_state['model_top_p'] = 0.75
-    st.session_state['model_top_k'] = 120
-    st.session_state['model_min_p'] = 0.08
+    st.session_state['model_top_p'] = 0.0
+    st.session_state['model_top_k'] = 0
+    st.session_state['model_min_p'] = 0.06
     st.session_state['repeat_penalty'] = 1.1
 
     st.session_state['message_list'] = []
@@ -388,17 +330,6 @@ def text_thread(text=str):
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def message_boop():
-    if st.session_state['user_type'] == 'admin':
-        message_boop = simpleaudio.WaveObject.from_wave_file("./llmonpy/chat_pop.wav")
-        message_boop.play()
-
-def check_user_type():
-    disable_option = False
-    if st.session_state['user_type'] == 'user_basic':
-        disable_option = True
-    return disable_option
-
 def get_gguf_info(file_path=str):
     reader = GGUFReader(file_path)
     max_key_length = max(len(key) for key in reader.fields.keys())
@@ -409,3 +340,33 @@ def get_gguf_info(file_path=str):
             value = field.parts[field.data[0]]
             print(f"{key:{max_key_length}} : {value}")
             return
+
+def get_weather(city):
+    url = "https://google.com/search?q=weather+in+" + city 
+    request_result = requests.get(url) 
+    soup = bs4.BeautifulSoup( request_result.text , "html.parser") 
+    temp = soup.find("div", class_='BNeawe s3v9rd AP7Wnd').text
+    return temp
+
+def get_stock_price(symbol):
+    helper_text = f"{symbol}+stock+price"
+    url = f"https://google.com/search?q={helper_text}"
+    request_result = requests.get(url) 
+    soup = bs4.BeautifulSoup( request_result.text , "html.parser") 
+    stock_price = soup.find("div", class_='BNeawe iBp4i AP7Wnd').text
+    return stock_price
+
+def open_youtube(query):
+    search_url = f"https://www.youtube.com/results?search_query={query}"
+    webbrowser.open(search_url)
+
+def get_world_news(article_num=3):
+    NewsFeed = feedparser.parse("https://www.cbc.ca/webfeed/rss/rss-world")
+    if article_num > len(NewsFeed.entries):
+        article_num = len(NewsFeed.entries)
+    article_list = []
+    while article_num:
+        article_summary = f"""{NewsFeed.entries[article_num].title}, {NewsFeed.entries[article_num].published}, {NewsFeed.entries[article_num].summary}, {NewsFeed.entries[article_num].link}"""
+        article_list.append(article_summary)
+        article_num -= 1
+    return article_list
