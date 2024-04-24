@@ -151,12 +151,7 @@ if st.session_state.bite_llmon:
 
     model_response = ""
     user_prompt = ""
-
-    @st.experimental_fragment
-    def block_chat():
-        st.session_state.lock_input = True
-
-    if user_text_prompt:= st.chat_input(disabled=st.session_state.lock_input, on_submit=block_chat):
+    if user_text_prompt:= st.chat_input():
         user_prompt = user_text_prompt
         
         if user_text_prompt == " ":
@@ -210,7 +205,7 @@ if st.session_state.bite_llmon:
 
                 if func_name == "describe_image":
                     st.toast(body='🍋 :orange[lets take a look...]')
-                    st.session_state.function_results = llmon.Moondream.generate_response(prompt=user_prompt)
+                    st.session_state.function_results = llmon.Moondream.generate_response(prompt=value_name[0])
     
                 if func_name == "get_news":
                     st.toast(body='🍋 :orange[assembling news team 6...]')
@@ -231,14 +226,17 @@ if st.session_state.bite_llmon:
                     st.session_state.first_watch = False
 
                 final_prompt = llmon.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results)
-                model_output = st.session_state["chat_model"](prompt=final_prompt,
+                if image_created == False:
+                    model_output = st.session_state["chat_model"](prompt=final_prompt,
                                                         repeat_penalty=float(st.session_state['repeat_penalty']),
                                                         max_tokens=st.session_state['max_context'], 
                                                         top_k=int(st.session_state['model_top_k']),
                                                         top_p=float(st.session_state['model_top_p']),
                                                         min_p=float(st.session_state['model_min_p']),
                                                         temperature=float(st.session_state['model_temperature']))
-                model_response = model_output['choices'][0]['text']
+                    model_response = model_output['choices'][0]['text']
+                else: model_response = ""
+    
                 st.session_state['model_output_tokens'] = model_output['usage']['total_tokens']
         except: pass
 
@@ -260,12 +258,6 @@ if st.session_state.bite_llmon:
                     st.session_state.first_watch = True
                     st.video(data=st.session_state.video_link)
                 except: pass
-            if st.session_state.function_results == "" and image_created:
-                pass
-            else: st.markdown(model_response)
+            st.markdown(model_response)
         st.session_state.messages.append({"role": "assistant", "content": model_response})
         st.session_state['message_list'].append(f"You: {model_response}")
-
-        if st.session_state.lock_input:
-            st.session_state.lock_input = False
-            st.rerun()
