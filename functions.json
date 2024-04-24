@@ -1,16 +1,30 @@
 [
   {
-    "name": "get_city_temp",
-    "description": "Get the temperature for a city.",
+    "name": "answer_other_questions",
+    "description": "Respond to the users request if no other function call is required.",
     "parameters": {
       "type": "object",
       "properties": {
-        "city": {
+        "user_message": {
           "type": "string",
-          "description": "The city name to look up."
+          "description": "User message to answer. Example: 'hello', 'can bugs think?' ."
         }
       },
-      "required": ["city"]
+      "required": ["user_message"]
+    }
+  },
+  {
+    "name": "get_city_weather",
+    "description": "Get the current weather forcast of a city.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "city_name": {
+          "type": "string",
+          "description": "The city name to search up live weather data for."
+        }
+      },
+      "required": ["city_name"]
     }
   },
   {
@@ -35,38 +49,52 @@
       "properties": {
         "user_query": {
           "type": "string",
-          "description": "User inqury about the image."
+          "description": "User inquiry about the image."
         }
       },
       "required": ["user_query"]
     }
   },
   {
-    "name": "open_youtube",
-    "description": "Loads Youtube with the users query.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "serch_query": {
-          "type": "string",
-          "description": "User query to use with YouTube."
-        }
-      },
-      "required": ["search_query"]
-    }
-  },
-  {
-    "name": "get_world_news",
-    "description": "Get latest world news from CBC.ca.",
+    "name": "get_news",
+    "description": "Gets the latest news from RSS feeds.",
     "parameters": {
       "type": "object",
       "properties": {
         "num_of_articles": {
-          "type": "string",
-          "description": "Number of articles to present."
+          "type": "integer",
+          "description": "Number of articles to present. Default is 3."
         }
       },
       "required": ["num_of_articles"]
+    }
+  },
+  {
+    "name": "create_image",
+    "description": "Generates a image from the users prompt.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "image_prompt": {
+          "type": "string",
+          "description": "Prompt used to generate the image."
+        }
+      },
+      "required": ["image_prompt"]
+    }
+  },
+  {
+    "name": "video_player",
+    "description": "Get a YouTube search query and play video in chat window.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "youtube_query": {
+          "type": "string",
+          "description": "The YouTube search query provided by the user."
+        }
+      },
+      "required": ["youtube_query"]
     }
   }
 ]
