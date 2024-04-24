@@ -8,7 +8,4 @@ Currently using SDXL Turbo and Moondream2 for image generation/vision.
 
 Can be deployed using ngrok in minutes. Easily modified.
 
-Recommend 16GB (Nvidia) GPU.
 ![image](https://github.com/3eeps/llmon-py/assets/55860052/9bf21974-9d35-4f23-8722-9b86c859f789)
-
-
