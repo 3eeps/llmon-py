@@ -1,23 +1,23 @@
 # ./codespace/main.py
 import streamlit as st
-import llmonpy, xtts_stream
+import llmon, xtts_stream
 import os
 
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="expanded")
     
 if 'app_state_init' not in st.session_state:
-    llmonpy.init_state()
+    llmon.init_state()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "image_pipe_turbo" not in st.session_state:
     st.toast(body='🍋 :orange[loading sdxl turbo...]')
-    llmonpy.SDXLTurbo.init()
+    llmon.SDXLTurbo.init()
 
 if "moondream" not in st.session_state:
     st.toast(body='🍋 :orange[loading moondream2...]')
-    llmonpy.Moondream.load_vision_encoder()
+    llmon.Moondream.load_vision_encoder()
 
 if 'melo_model' not in st.session_state and st.session_state['enable_melo'] and st.session_state.bite_llmon:
     st.toast(body='🍋 :orange[loading melotts...]')
@@ -46,7 +46,7 @@ if "chat_model" not in st.session_state and st.session_state.bite_llmon:
                                             verbose=True)
 
 with st.sidebar:
-    llmonpy.memory_display()
+    llmon.memory_display()
     st.markdown("""
             <style>
                 div[data-testid="column"] {
@@ -68,7 +68,7 @@ with st.sidebar:
             st.session_state['model_output_tokens'] = 0
     with col3:
         if st.button(label=':red[clear vram]'):
-            llmonpy.clear_vram()
+            llmon.clear_vram()
             st.rerun()
 
     @st.experimental_fragment
@@ -160,9 +160,9 @@ if st.session_state.bite_llmon:
         user_prompt = user_text_prompt
         
         if user_text_prompt == " ":
-            user_prompt = llmonpy.voice_to_text()
+            user_prompt = llmon.voice_to_text()
 
-        final_prompt = llmonpy.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'])
+        final_prompt = llmon.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'])
         with st.chat_message(name="user"):
             st.markdown(user_prompt)
             if st.session_state.bytes_data:
@@ -203,22 +203,22 @@ if st.session_state.bite_llmon:
                 print(value_name)
 
                 if func_name == "get_stock_price":
-                    st.session_state.function_results = llmonpy.FunctionCall.get_stock_price(symbol=value_name[0])
+                    st.session_state.function_results = llmon.FunctionCall.get_stock_price(symbol=value_name[0])
 
                 if func_name == "get_city_weather":
-                    st.session_state.function_results = f"""Use Markdown language to make the weather data quickly readable for the user. Data: {llmonpy.FunctionCall.get_weather(city=value_name[0])}"""
+                    st.session_state.function_results = f"""Use Markdown language to make the weather data quickly readable for the user. Data: {llmon.FunctionCall.get_weather(city=value_name[0])}"""
 
                 if func_name == "describe_image":
                     st.toast(body='🍋 :orange[lets take a look...]')
-                    st.session_state.function_results = llmonpy.Moondream.generate_response(prompt=user_prompt)
+                    st.session_state.function_results = llmon.Moondream.generate_response(prompt=user_prompt)
     
                 if func_name == "get_news":
                     st.toast(body='🍋 :orange[assembling news team 6...]')
-                    st.session_state.function_results = f"Breakdown the information inside each news story into a professional presentation using the Markdown. Remove text that is not part of the articles paragraph. Use Markdown to present the image urls (example: ![news story Image](http://www.url.com/article_image.png)): {llmonpy.FunctionCall.get_news(value_name[0])}"""
+                    st.session_state.function_results = f"Breakdown the information inside each news story into a professional presentation using the Markdown. Remove text that is not part of the articles paragraph. Use Markdown to present the image urls (example: ![news story Image](http://www.url.com/article_image.png)): {llmon.FunctionCall.get_news(value_name[0])}"""
 
                 if func_name == "create_image":
                     st.toast(body='🍋 :orange[generating image for you...]')
-                    llmonpy.SDXLTurbo.generate_image(prompt=value_name[0])
+                    llmon.SDXLTurbo.generate_image(prompt=value_name[0])
                     st.session_state.function_results = "done"
                     image_created = True
 
@@ -226,11 +226,11 @@ if st.session_state.bite_llmon:
                     st.session_state.function_results = "func_reply"
 
                 if func_name == "video_player":
-                    st.session_state.video_link = llmonpy.FunctionCall.youtube_download(link=value_name[0])
+                    st.session_state.video_link = llmon.FunctionCall.youtube_download(link=value_name[0])
                     st.session_state.function_results = "Found video for playback!"
                     st.session_state.first_watch = False
 
-                final_prompt = llmonpy.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results)
+                final_prompt = llmon.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results)
                 model_output = st.session_state["chat_model"](prompt=final_prompt,
                                                         repeat_penalty=float(st.session_state['repeat_penalty']),
                                                         max_tokens=st.session_state['max_context'], 
@@ -244,7 +244,7 @@ if st.session_state.bite_llmon:
 
         if st.session_state['enable_melo']:
             st.toast(body='🍋 :orange[generating audio...]')              
-            llmonpy.melo_gen_message(message=model_response)
+            llmon.melo_gen_message(message=model_response)
             
         if st.session_state['enable_xtts']:
             st.toast(body='🍋 :orange[generating audio...]')
