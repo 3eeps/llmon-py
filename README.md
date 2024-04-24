@@ -1,5 +1,4 @@
-![image](https://github.com/3eeps/llmon-py/assets/55860052/5e439aba-83f6-4392-af55-a9a3f0a82aab)
-
+![image](https://github.com/3eeps/llmon-py/assets/55860052/5603c6b4-6b68-4814-96b1-bd46bff1c78e)
 
 Local Streamlit based webui for Large Language Models. Supports the GGUF format. 
 
