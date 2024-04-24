@@ -19,7 +19,6 @@ from PIL import Image
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def melo_gen_message(message=str):
-    #EN-Default, EN-US, EN-BR, EN_INDIA EN-AU
     output_path = 'melo_tts_playback.wav'
     st.session_state['melo_model'].tts_to_file(text=message, speaker_id=st.session_state['speaker_ids']['EN-AU'], output_path=output_path, speed=1.0)
    
