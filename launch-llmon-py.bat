@@ -1,2 +1,2 @@
-cd *where home.py is*
-streamlit run home.py
+cd *where main.py is*
+streamlit run main.py
