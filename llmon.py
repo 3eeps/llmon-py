@@ -70,7 +70,7 @@ def update_chat_template(prompt="", template_type="", function_result=""):
         func_mistral = f"""<s>[INST]You are a function calling AI model. You are provided with the following functions: 
         Functions: {json.dumps(st.session_state.functions)}"
         When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
-        Do not describe the function, only reply with the function and the data as a python dictionary.
+        Do not describe the function. Only output functions found in the json file provided to you.
         {prompt} [/INST]"""
         template = func_mistral
 
@@ -82,8 +82,14 @@ def update_chat_template(prompt="", template_type="", function_result=""):
             {prompt} [/INST]"""
             template = func_mistral
 
-        if function_result and normal_reply == False:
-            func_mistral = f"""<s>[INST]The user has asked this question: {prompt}. Provide this answer: {function_result}. [/INST]"""
+        if len(function_result) > 1 and normal_reply == False:
+            func_mistral = f"""<s>[INST]The user has asked this question: {prompt}. {function_result}. [/INST]"""
+            template = func_mistral
+
+        if len(st.session_state.sys_prompt) > 1:
+            func_mistral = f"""<s>[INST]{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}
+
+            {prompt} [/INST]"""
             template = func_mistral
 
     if template_type == "chat_mixtral":
@@ -93,6 +99,12 @@ def update_chat_template(prompt="", template_type="", function_result=""):
         {prompt} [/INST]"""
         template = chat_mixtral
 
+        if len(st.session_state.sys_prompt) > 1:
+            chat_mixtral = f"""[INST]{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}
+
+            {prompt} [/INST]"""
+            template = chat_mixtral
+
     if template_type == "tiny_dolphin":
         tiny_sys = f"""You are a helpful AI assistant. Chat history: {st.session_state['message_list']}"""
         tiny_dolphin = f"""<|im_start|>system
@@ -101,6 +113,15 @@ def update_chat_template(prompt="", template_type="", function_result=""):
         {prompt}<|im_end|>
         <|im_start|>assistant"""
         template = tiny_dolphin
+
+        if len(st.session_state.sys_prompt) > 1:
+            tiny_sys = f"""{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}"""
+            tiny_dolphin = f"""<|im_start|>system
+            {tiny_sys}<|im_end|>
+            <|im_start|>user
+            {prompt}<|im_end|>
+            <|im_start|>assistant"""
+            template = tiny_dolphin
 
     if template_type == 'code_deepseek':
         code_deepseek = f"""You are an AI programming assistant, specialized in explaining Python code by thinking step by step. Use the 'Context History' below for conversation history to help you look at past code and questions from yourself and the user.
@@ -116,6 +137,13 @@ def update_chat_template(prompt="", template_type="", function_result=""):
         {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
         {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
         template = chat_llama3
+
+        if len(st.session_state.sys_prompt) > 1:
+            system_message = f"""{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}"""
+            chat_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
+            {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
+            {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+            template = chat_llama3
 
     if template_type == "instruct_phi":
         instruct_phi = f"""<|user|>
@@ -176,11 +204,16 @@ def init_state():
                                 'repeat_penalty': 1.1,
                                 'message_list': []}
 
+    st.session_state['model_select'] = 'code-mistral-7b.gguf'
+    st.session_state.model_picked = 'code-mistral-7b.gguf'
+    st.session_state.enable_moondream = False
+    st.session_state.enable_sdxl_turbo = False
     with open("functions.json", "r") as file:
         st.session_state.functions = json.load(file)
-
+    st.session_state.chat_prompt_default = ""
     st.session_state.model_loader = False
     st.session_state.bite_llmon = False
+    st.session_state.sys_prompt = ""
     st.session_state.model_list = scan_dir('./models')
     st.session_state.chat_templates = ['code_mistral', 'code_deepseek', 'chat_llama3', 'func_mistral', 'chat_mixtral' , 'instruct_phi', 'tiny_dolphin']
     st.session_state.video_link = None
@@ -188,7 +221,6 @@ def init_state():
     st.session_state.function_results = ""
     st.session_state.bytes_data = None
     st.session_state['app_state_init'] = True
-    st.session_state.lock_input = False
     st.session_state.model_label = 'visible'
 
     for key, value in default_settings_state.items():
@@ -279,7 +311,7 @@ class Moondream:
     def load_vision_encoder():
         model_id = "moondream2"
         revision = "2024-04-02"
-        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision)
+        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16)
         st.session_state.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
 
     def generate_response(prompt=str):
