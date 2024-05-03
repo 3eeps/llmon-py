@@ -1,7 +1,6 @@
 # ./codespace/main.py
 import streamlit as st
-import llmon, xtts_stream
-import torch
+import llmon
 import os
 
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="expanded")
@@ -28,7 +27,7 @@ if 'melo_model' not in st.session_state and st.session_state['enable_melo'] and 
 
 if 'xtts_model' not in st.session_state and st.session_state['enable_xtts'] and st.session_state.bite_llmon:
     st.toast(body='🍋 :orange[loading xtts...]')
-    xtts_stream.load_xtts()
+    llmon.XttsTTS.load_xtts()
     
 if 'speech_tt_model' not in st.session_state:
     st.toast(body='🍋 :orange[loading pywhispercpp...]')
@@ -74,44 +73,32 @@ with st.sidebar:
 
     @st.experimental_fragment
     def select_model():
-        if st.session_state['model_select'] == False:
-            try:
-                del st.session_state['moondream']
-                torch.cuda.empty_cache() 
-            except: pass
         st.session_state['model_select'] = st.selectbox(label=':orange[model]', options=st.session_state.model_list, disabled=st.session_state.model_loader, label_visibility=st.session_state.model_label)
         if st.session_state.model_picked != st.session_state['model_select']:
             try:
                 del st.session_state['chat_model']
-                torch.cuda.empty_cache()
                 st.session_state.model_picked = None
+                st.rerun()
             except: pass
-        st.session_state.enable_moondream = st.checkbox(label=':orange[moondream]', value=st.session_state.enable_moondream)
+        st.session_state.enable_moondream = st.toggle(label=':orange[moondream]', value=st.session_state.enable_moondream)
         if st.session_state.enable_moondream == False:
             try:
+                st.session_state.enable_moondream = None
                 del st.session_state['moondream']
-                torch.cuda.empty_cache() 
+                st.rerun() 
             except: pass
-        st.session_state.enable_sdxl_turbo = st.checkbox(label=':orange[sdxl turbo]', value=st.session_state.enable_sdxl_turbo)
+        st.session_state.enable_sdxl_turbo = st.toggle(label=':orange[sdxl turbo]', value=st.session_state.enable_sdxl_turbo)
         if st.session_state.enable_sdxl_turbo == False:
             try:
+                st.session_state.enable_sdxl_turbo = None
                 del st.session_state['image_pipe_turbo']
-                torch.cuda.empty_cache()
+                st.rerun()
             except: pass
         st.session_state.bite_llmon = True
-        #st.session_state.model_loader = True
         st.session_state.model_picked = st.session_state['model_select']
-        #st.session_state.model_label = 'collapsed'
     select_model()
 
-    if st.session_state['model_select'] == 'tinydolphin-1.1b.gguf':
-        st.session_state['template_select'] = st.session_state.chat_templates[6]
-        st.session_state['max_context'] = 4096
-
-    if st.session_state['model_select'] == 'phi-3-mini-instruct.gguf':
-        st.session_state['template_select'] = st.session_state.chat_templates[5]
-        st.session_state['max_context'] = 4096
-        st.session_state['gpu_layer_count'] = -1
+    model_list = ['mistral-7b-instruct.gguf', 'llama-3-8b-instruct.gguf', 'deepseek-coder-33b-instruct.gguf', 'mixtral-8x7b-instruct.gguf']
 
     if st.session_state['model_select'] == 'mixtral-8x7b-instruct.gguf':
         st.session_state['template_select'] = st.session_state.chat_templates[4]
@@ -132,11 +119,6 @@ with st.sidebar:
         st.session_state['template_select'] = st.session_state.chat_templates[1]
         st.session_state['max_context'] = 8192
         st.session_state['gpu_layer_count'] = 40
-
-    if st.session_state['model_select'] == 'code-mistral-7b.gguf':
-        st.session_state['template_select'] = st.session_state.chat_templates[0]
-        st.session_state['max_context'] = 8192
-        st.session_state['gpu_layer_count'] = -1
 
     @st.experimental_fragment
     def advanced_settings():
@@ -272,12 +254,12 @@ if st.session_state.bite_llmon:
         except: pass
 
         if st.session_state['enable_melo']:
-            st.toast(body='🍋 :orange[generating audio...]')              
+            st.toast(body='🍋 :orange[generating audio with melotts...]')              
             llmon.melo_gen_message(message=model_response)
             
         if st.session_state['enable_xtts']:
-            st.toast(body='🍋 :orange[generating audio...]')
-            xtts_stream.play_back_speech(prompt=model_response)
+            st.toast(body='🍋 :orange[generating audio with xtts...]')
+            llmon.XttsTTS.play_back_speech(prompt=model_response)
             
         with st.chat_message(name="assistant", avatar="🍋"):
             try:
