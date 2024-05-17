@@ -1,7 +1,7 @@
 # ./codespace/llmon.py
 import streamlit as st
 import os
-#import torch
+import torch
 import sounddevice
 import GPUtil as GPU
 import psutil
@@ -47,25 +47,26 @@ def split_sentence_on_word(sentence, stop_word):
     return ' '.join(result)
 
 def voice_to_text():
-        speech_model_path = './speech models'
-        rec_user_voice = sounddevice.rec(int(st.session_state['user_audio_length']) * 44100, samplerate=44100, channels=2)
-        sounddevice.wait()
-        write_wav(filename='user_output.wav', rate=44100, data=rec_user_voice)
-        st.session_state['speech_tt_model'] = Model(models_dir=speech_model_path, n_threads=10)
-        user_voice_data = st.session_state['speech_tt_model'].transcribe('user_output.wav', speed_up=True)
-        os.remove(f"user_output.wav")
+    speech_model_path = './speech models'
+    rec_user_voice = sounddevice.rec(int(st.session_state['user_audio_length']) * 44100, samplerate=44100, channels=2)
+    sounddevice.wait()
+    write_wav(filename='user_output.wav', rate=44100, data=rec_user_voice)
+    st.session_state['speech_tt_model'] = Model(models_dir=speech_model_path, n_threads=10)
+    user_voice_data = st.session_state['speech_tt_model'].transcribe('user_output.wav', speed_up=True)
+    os.remove(f"user_output.wav")
 
-        text_data = []
-        for voice in user_voice_data:        
-            text_data.append(voice.text)
-        combined_text = ' '.join(text_data)
-        return combined_text
+    text_data = []
+    for voice in user_voice_data:        
+        text_data.append(voice.text)
+    combined_text = ' '.join(text_data)
+    return combined_text
 
 def update_chat_template(prompt="", template_type="", function_result=""):
     template = ""
+    # function calling mistral prompt
     if template_type == "func_mistral":
         func_mistral = f"""<s>[INST]You are a function calling AI model. You are provided with the following functions: 
-        Functions: {json.dumps(st.session_state.functions)}"
+        Functions: {json.dumps(st.session_state.functions)}
         When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
         Do not describe the function. Only output functions found in the json file provided to you.
         {prompt} [/INST]"""
@@ -74,8 +75,9 @@ def update_chat_template(prompt="", template_type="", function_result=""):
         normal_reply = False
         if function_result == "func_reply":
             normal_reply = True
-            func_mistral = f"""<s>[INST]You are an helpful AI assistant, answer any request the user may have. Chat history: {st.session_state['message_list']}
-
+            func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users best friend.
+            You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response t oany inquiries the user has.
+            The user is roughly 35 years old and is well versed in most topics. Do not answer questions in long paragraphs but more quick and precise. Act more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}
             {prompt} [/INST]"""
             template = func_mistral
 
@@ -84,54 +86,47 @@ def update_chat_template(prompt="", template_type="", function_result=""):
             template = func_mistral
 
         if len(st.session_state.sys_prompt) > 1:
-            func_mistral = f"""<s>[INST]{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}
+            func_mistral = f"""<s>[INST]{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}
 
             {prompt} [/INST]"""
             template = func_mistral
 
-    if template_type == "chat_mixtral":
-        chat_mixtral = f"""[INST]You are an helpful AI assistant, answer any request the user may have. Chat history: {st.session_state['message_list']}
-        Conversation history: {st.session_state['message_list']}
-
-        {prompt} [/INST]"""
-        template = chat_mixtral
-
-        if len(st.session_state.sys_prompt) > 1:
-            chat_mixtral = f"""[INST]{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}
-
-            {prompt} [/INST]"""
-            template = chat_mixtral
-
-    if template_type == "tiny_dolphin":
-        tiny_sys = f"""You are a helpful AI assistant. Chat history: {st.session_state['message_list']}"""
-        tiny_dolphin = f"""<|im_start|>system
-        {tiny_sys}<|im_end|>
-        <|im_start|>user
-        {prompt}<|im_end|>
-        <|im_start|>assistant"""
-        template = tiny_dolphin
-
-    if template_type == 'code_deepseek':
-        code_deepseek = f"""You are an AI programming assistant, specialized in explaining Python code by thinking step by step. Use the 'Context History' below for conversation history to help you look at past code and questions from yourself and the user.
-        ### Instruction:
-        Context History: {st.session_state['message_list']}
-        {prompt}
-        ### Response:"""
-        template = code_deepseek
-
-    if template_type == 'chat_llama3':
-        system_message = f"""You are an helpful AI assistant, answer any request the user may have. Chat history: {st.session_state['message_list']}"""
-        chat_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
-        {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
+    # function calling llama3 prompt
+    if template_type == "func_llama3":
+        system_message = f"""You are a function calling AI model. You are provided with the following functions: 
+        Functions: {json.dumps(st.session_state.functions)}
+        When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
+        Do not describe the function. Only output functions found in the json file provided to you. Do not describe the function, 'present it', or wrap it in markdown. do not say: Here is the function call:"""
+        system_message_plus_example = """Example: User: 'what is the weather like in barrie?' You: '{'function_name': 'get_city_weather', 'parameters': {'city_name': 'barrie'}}'"""
+        func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
+        {system_message + system_message_plus_example}<|eot_id|><|start_header_id|>user<|end_header_id|>
         {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-        template = chat_llama3
+        template = func_llama3
 
-        if len(st.session_state.sys_prompt) > 1:
-            system_message = f"""{st.session_state.sys_prompt} Conversation history: {st.session_state['message_list']}"""
-            chat_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
+        normal_reply = False
+        if function_result == "func_reply":
+            normal_reply = True
+            system_message = f"""You are an AI assistant who acts more as the users best friend.
+            You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
+            The user is roughly 35 years old and is well versed in most topics. Do not answer questions in long paragraphs but more quick and precise. Act more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}"""
+            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
             {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
             {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-            template = chat_llama3
+            template = func_llama3
+
+        if len(function_result) > 1 and normal_reply == False:
+            system_message = f"""The user has asked this question: {prompt}. Answer with this data: {function_result}."""
+            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
+            {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
+            {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+            template = func_llama3
+
+        if len(st.session_state.sys_prompt) > 1:
+            system_message = f"""{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}"""
+            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
+            {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
+            {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+            template = func_llama3
 
     return template
 
@@ -142,42 +137,52 @@ def scan_dir(directory):
             directory_list.append(file.name)
     return directory_list or None
 
-def clear_vram():
+def clear_vram(models_to_unload=None):
     model_list = ['melo_model', 'speaker_ids', 'xtts_model', 'gpt_cond_latent', 'xtts_config', 'chat_model']
     toggled_on_list = ['enable_xtts', 'enable_melo']
+    if models_to_unload != None:
+        for toggle in toggled_on_list:
+            if st.session_state[toggle]:
+                st.session_state[toggle] = False
 
-    for toggle in toggled_on_list:
-        if st.session_state[toggle]:
-            st.session_state[toggle] = False
+        for model in models_to_unload:
+            try:
+                del st.session_state[model]
+                print(f'unloaded {model}')
+            except: pass
+    else:
+        for toggle in toggled_on_list:
+            if st.session_state[toggle]:
+                st.session_state[toggle] = False
+    
+        for model in model_list:
+            try:
+                del st.session_state[model]
+                print(f'unloaded {model}')
+            except: pass
 
-    for model in model_list:
-        try:
-            del st.session_state[model]
-            print(f'unloaded {model}')
-        except: pass
-
-    st.session_state['message_list'] = []
-    st.session_state.messages = []
-    st.session_state.bytes_data = None
-    st.session_state.model_loader = False
-    st.session_state.bite_llmon = False
-    st.session_state.lock_input = False
-    st.session_state['model_output_tokens'] = 0
-    #torch.cuda.empty_cache()
-    print ('cleared vram')
+        st.session_state['message_list'] = []
+        st.session_state.messages = []
+        st.session_state.bytes_data = None
+        st.session_state.model_loader = False
+        st.session_state.bite_llmon = False
+        st.session_state.lock_input = False
+        st.session_state['model_output_tokens'] = 0
+        #torch.cuda.empty_cache()
+        print ('cleared vram')
 
 def init_state():
     default_settings_state = {  'enable_xtts': False,
                                 'enable_melo': False,
                                 'user_audio_length': 8,
-                                'max_context': 4096,
+                                'max_context': 8192,
+                                'gpu_layer_count': -1,
                                 'torch_audio_cores': 8,
                                 'cpu_core_count': 8,
                                 'cpu_batch_count': 8,
                                 'batch_size': 256,
                                 'gpt_cond_latent': None,
                                 'speaker_embedding': None,
-                                'loader_type': 'llama-cpp-python',
                                 'model_output_tokens': 0,
                                 'model_temperature': 0.85,
                                 'model_top_p': 0.0,
@@ -186,8 +191,8 @@ def init_state():
                                 'repeat_penalty': 1.1,
                                 'message_list': []}
 
-    st.session_state['model_select'] = 'code-mistral-7b.gguf'
-    st.session_state.model_picked = 'code-mistral-7b.gguf'
+    st.session_state['model_select'] = 'llama-3-8b-instruct.gguf'
+    st.session_state.model_picked = 'llama-3-8b-instruct.gguf'
     st.session_state.enable_moondream = False
     st.session_state.enable_sdxl_turbo = False
     with open("functions.json", "r") as file:
@@ -197,14 +202,13 @@ def init_state():
     st.session_state.bite_llmon = False
     st.session_state.sys_prompt = ""
     st.session_state.model_list = scan_dir('./models')
-    st.session_state.chat_templates = ['code_mistral', 'code_deepseek', 'chat_llama3', 'func_mistral', 'chat_mixtral' , 'instruct_phi', 'tiny_dolphin']
+    st.session_state.chat_templates = ['func_llama3', 'func_mistral']
     st.session_state.video_link = None
     st.session_state.first_watch = False
     st.session_state.function_results = ""
     st.session_state.bytes_data = None
     st.session_state['app_state_init'] = True
     st.session_state.model_label = 'visible'
-
     for key, value in default_settings_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -291,9 +295,9 @@ class SDXLTurbo:
 
 class Moondream:
     def load_vision_encoder():
-        model_id = "moondream2"
-        revision = "2024-04-02"
-        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to('cpu')
+        model_id = "vikhyatk/moondream2"
+        revision = "2024-05-08"
+        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16)
         st.session_state.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
 
     def generate_response(prompt=str):
@@ -307,7 +311,7 @@ class XttsTTS:
         self.q = queue.Queue()
         self.event = threading.Event()
 
-    def load_xtts(self):
+    def load_xtts():
         st.session_state['xtts_config'] = XttsConfig()
         st.session_state['xtts_config'].load_json("./speech models/xtts/config.json")
         st.session_state['xtts_model'] = Xtts.init_from_config(st.session_state['xtts_config'])

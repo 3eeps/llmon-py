@@ -49,7 +49,7 @@
       "properties": {
         "user_query": {
           "type": "string",
-          "description": "User inquiry about the image."
+          "description": "Users question about the image."
         }
       },
       "required": ["user_query"]
