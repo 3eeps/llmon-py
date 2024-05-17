@@ -2,7 +2,7 @@
 
 Local Streamlit based webui for Large Language Models. Supports the GGUF format. 
 
-Inference with LLMs with speech-to-text and text-to-speech with function calling!
+Inference with LLMs with support for stt/tts with function calling!
 
 Currently using SDXL Turbo and Moondream2 for image generation/vision.
 
