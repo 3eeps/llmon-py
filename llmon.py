@@ -269,12 +269,8 @@ class Moondream:
     def load_vision_encoder():
         model_id = "vikhyatk/moondream2"
         revision = "2024-05-08"
-        if st.session_state.enable_moondream == False:
-            st.toast(body='🍋 :orange[loading moondream2...]')
-            st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16)
-        if st.session_state.enable_moondream:
-            st.toast(body='🍋 :orange[loading moondream2 on cpu...]')
-            st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision)  
+        st.toast(body='🍋 :orange[loading moondream2...]')
+        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16) 
         st.session_state.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
 
     def generate_response(prompt=str):
