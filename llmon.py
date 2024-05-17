@@ -17,34 +17,17 @@ from pywhispercpp.model import Model
 from diffusers import AutoPipelineForText2Image
 from PIL import Image
 from transformers import AutoModelForCausalLM, AutoTokenizer
-import numpy as np
-import librosa
-import sounddevice as sd
-import queue
-import threading
-from TTS.tts.configs.xtts_config import XttsConfig
-from TTS.tts.models.xtts import Xtts
 
 def melo_gen_message(message=str):
     output_path = 'melo_tts_playback.wav'
-    st.session_state['melo_model'].tts_to_file(text=message, speaker_id=st.session_state['speaker_ids']['EN-AU'], output_path=output_path, speed=1.0)
-   
+    st.session_state['melo_model'].tts_to_file(text=message, speaker_id=st.session_state['speaker_ids']['EN-US'], output_path=output_path, speed=1.0)
     with open(output_path, "rb") as file:
         data = file.read()
 
     audio_base64 = base64.b64encode(data).decode('utf-8')
     audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64,{audio_base64}">'
     st.markdown(audio_tag, unsafe_allow_html=True)
-
-def split_sentence_on_word(sentence, stop_word):
-    words = sentence.split()
-    result = []
-    for word in words:
-        if stop_word in word:
-            break
-        result.append(word)
-    #result.pop(0)
-    return ' '.join(result)
+    os.remove('melo_tts_playback.wav')
 
 def voice_to_text():
     speech_model_path = './speech models'
@@ -63,7 +46,6 @@ def voice_to_text():
 
 def update_chat_template(prompt="", template_type="", function_result=""):
     template = ""
-    # function calling mistral prompt
     if template_type == "func_mistral":
         func_mistral = f"""<s>[INST]You are a function calling AI model. You are provided with the following functions: 
         Functions: {json.dumps(st.session_state.functions)}
@@ -91,7 +73,6 @@ def update_chat_template(prompt="", template_type="", function_result=""):
             {prompt} [/INST]"""
             template = func_mistral
 
-    # function calling llama3 prompt
     if template_type == "func_llama3":
         system_message = f"""You are a function calling AI model. You are provided with the following functions: 
         Functions: {json.dumps(st.session_state.functions)}
@@ -137,15 +118,14 @@ def scan_dir(directory):
             directory_list.append(file.name)
     return directory_list or None
 
-def clear_vram(models_to_unload=None):
-    model_list = ['melo_model', 'speaker_ids', 'xtts_model', 'gpt_cond_latent', 'xtts_config', 'chat_model']
-    toggled_on_list = ['enable_xtts', 'enable_melo']
-    if models_to_unload != None:
-        for toggle in toggled_on_list:
-            if st.session_state[toggle]:
-                st.session_state[toggle] = False
+def clear_vram():
+    model_list = ['chat_model', 'image_pipe_turbo', 'moondream']
+    toggled_on_list = ['enable_moondream', 'enable_sdxl_turbo']
+    for toggle in toggled_on_list:
+        if st.session_state[toggle]:
+            st.session_state[toggle] = False
 
-        for model in models_to_unload:
+        for model in model_list:
             try:
                 del st.session_state[model]
                 print(f'unloaded {model}')
@@ -160,44 +140,37 @@ def clear_vram(models_to_unload=None):
                 del st.session_state[model]
                 print(f'unloaded {model}')
             except: pass
-
         st.session_state['message_list'] = []
         st.session_state.messages = []
         st.session_state.bytes_data = None
         st.session_state.model_loader = False
         st.session_state.bite_llmon = False
-        st.session_state.lock_input = False
         st.session_state['model_output_tokens'] = 0
-        #torch.cuda.empty_cache()
         print ('cleared vram')
 
 def init_state():
-    default_settings_state = {  'enable_xtts': False,
-                                'enable_melo': False,
-                                'user_audio_length': 8,
-                                'max_context': 8192,
-                                'gpu_layer_count': -1,
-                                'torch_audio_cores': 8,
-                                'cpu_core_count': 8,
-                                'cpu_batch_count': 8,
-                                'batch_size': 256,
-                                'gpt_cond_latent': None,
-                                'speaker_embedding': None,
-                                'model_output_tokens': 0,
-                                'model_temperature': 0.85,
-                                'model_top_p': 0.0,
-                                'model_top_k': 0,
-                                'model_min_p': 0.06,
-                                'repeat_penalty': 1.1,
-                                'message_list': []}
+    default_settings_state = {'user_audio_length': 8,
+                            'max_context': 8192,
+                            'gpu_layer_count': -1,
+                            'cpu_core_count': 8,
+                            'cpu_batch_count': 8,
+                            'batch_size': 256,
+                            'model_output_tokens': 0,
+                            'model_temperature': 0.85,
+                            'model_top_p': 0.0,
+                            'model_top_k': 0,
+                            'model_min_p': 0.06,
+                            'repeat_penalty': 1.1,
+                            'message_list': [],
+                            'app_state_init': True,
+                            'mute_melo': False,
+                            'model_select': 'llama-3-8b-instruct.gguf'}
 
-    st.session_state['model_select'] = 'llama-3-8b-instruct.gguf'
     st.session_state.model_picked = 'llama-3-8b-instruct.gguf'
     st.session_state.enable_moondream = False
     st.session_state.enable_sdxl_turbo = False
     with open("functions.json", "r") as file:
         st.session_state.functions = json.load(file)
-    st.session_state.chat_prompt_default = ""
     st.session_state.model_loader = False
     st.session_state.bite_llmon = False
     st.session_state.sys_prompt = ""
@@ -207,8 +180,6 @@ def init_state():
     st.session_state.first_watch = False
     st.session_state.function_results = ""
     st.session_state.bytes_data = None
-    st.session_state['app_state_init'] = True
-    st.session_state.model_label = 'visible'
     for key, value in default_settings_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -287,6 +258,7 @@ class FunctionCall:
 
 class SDXLTurbo:
     def init():
+        st.toast(body='🍋 :orange[loading sdxl turbo...]')
         st.session_state['image_pipe_turbo'] = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", variant="fp16").to('cpu')
     
     def generate_image(prompt="", steps=1):
@@ -297,7 +269,12 @@ class Moondream:
     def load_vision_encoder():
         model_id = "vikhyatk/moondream2"
         revision = "2024-05-08"
-        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16)
+        if st.session_state.enable_moondream == False:
+            st.toast(body='🍋 :orange[loading moondream2...]')
+            st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16)
+        if st.session_state.enable_moondream:
+            st.toast(body='🍋 :orange[loading moondream2 on cpu...]')
+            st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision)  
         st.session_state.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
 
     def generate_response(prompt=str):
@@ -305,66 +282,3 @@ class Moondream:
         image = Image.open(filename)
         enc_image = st.session_state['moondream'].encode_image(image)
         return st.session_state['moondream'].answer_question(enc_image, prompt, st.session_state.tokenizer)
-    
-class XttsTTS:
-    def __init__(self):
-        self.q = queue.Queue()
-        self.event = threading.Event()
-
-    def load_xtts():
-        st.session_state['xtts_config'] = XttsConfig()
-        st.session_state['xtts_config'].load_json("./speech models/xtts/config.json")
-        st.session_state['xtts_model'] = Xtts.init_from_config(st.session_state['xtts_config'])
-        st.session_state['xtts_model'].load_checkpoint(st.session_state['xtts_config'], checkpoint_dir="./speech models/xtts", use_deepspeed=False)
-        st.session_state['xtts_model'].cuda()
-        st.session_state['gpt_cond_latent'], st.session_state['speaker_embedding'] = st.session_state['xtts_model'].get_conditioning_latents(audio_path=["./voices/redguard.wav"])
-    
-    def buffer_audio_data(self, audio_data, target_size=2048):
-        """Buffer and yield audio data chunks of a specific size."""
-        buffer = np.array([], dtype=np.float32)
-        for chunk in audio_data:
-            if chunk.ndim != 1:
-                chunk = chunk.reshape(-1)
-            buffer = np.concatenate((buffer, chunk))
-            while len(buffer) >= target_size:
-                yield buffer[:target_size]
-                buffer = buffer[target_size:]
-        if len(buffer) > 0:
-            yield buffer
-
-    def callback(self, outdata, frames, time, status):
-        if status.output_underflow:
-            print('Output underflow: increase buffer size?')
-            raise sd.CallbackAbort
-        try:
-            data = self.q.get_nowait()
-        except queue.Empty:
-            print('Buffer is empty: increase buffer size?')
-            raise sd.CallbackAbort
-        reshaped_data = data.reshape(-1, 1)
-        if len(reshaped_data) < len(outdata):
-            outdata[:len(reshaped_data)] = reshaped_data
-            outdata[len(reshaped_data):] = 0
-        else: 
-            outdata[:] = reshaped_data
-
-    def generate_speech(self, text, language="en"):
-        chunks = st.session_state['xtts_model'].inference_stream(text, language, st.session_state['gpt_cond_latent'], st.session_state['speaker_embedding'], enable_text_splitting=True)
-        for chunk in chunks:
-            chunk = chunk.cpu().numpy().astype(np.float32)
-            chunk = librosa.resample(chunk, orig_sr=24000, target_sr=48000)
-            chunk = chunk.flatten()
-            for buffered_chunk in self.buffer_audio_data([chunk]):
-                self.q.put(buffered_chunk, block=True)
-
-    def play_back_speech(self, prompt=str):
-        try:
-            stream = sd.OutputStream(samplerate=48000, blocksize=2048, channels=1, callback=self.callback, finished_callback=self.event.set)
-            with stream:
-                for _ in range(256):
-                    dummy = np.zeros((2048, ), dtype=np.float32)
-                    self.q.put_nowait(dummy)
-                self.generate_speech(prompt)
-                self.event.wait()
-        except KeyboardInterrupt:
-            print('Interrupted by user')
