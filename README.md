@@ -1,6 +1,6 @@
 ![image](https://github.com/3eeps/llmon-py/assets/55860052/5603c6b4-6b68-4814-96b1-bd46bff1c78e)
 
-Local Streamlit based webui for Large Language Models. Supports the GGUF format. 
+Local Streamlit webui for Large Language Models. Supports the GGUF format. 
 
 Inference LLMs with support for STT/TTS and function calling!
 
