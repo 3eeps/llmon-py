@@ -6,6 +6,12 @@ from melo_tts.api import TTS
 from pywhispercpp.model import Model
 from llama_cpp import Llama
 
+
+
+# add saving context.. easy? save to json
+
+
+
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="expanded")
 if 'app_state_init' not in st.session_state:
     llmon.init_state()
@@ -38,9 +44,9 @@ if "chat_model" not in st.session_state and st.session_state.model_loaded:
     st.session_state.disable_chat = False
 
 with st.sidebar:
-    llmon.memory_display()
-    llmon.display_buttons()
-    llmon.select_model()
+    llmon.SidebarConfig.memory_display()
+    llmon.SidebarConfig.display_buttons()
+    llmon.SidebarConfig.select_model()
     st.caption(f"context: :orange[{st.session_state['model_output_tokens']}/{st.session_state['max_context']}]")
     if st.session_state.enable_moondream:
         uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
@@ -48,8 +54,8 @@ with st.sidebar:
             st.session_state.bytes_data = uploaded_file.getvalue()
             with open("ocr_upload_image.png", 'wb') as file:
                 file.write(st.session_state.bytes_data)
-    llmon.advanced_settings()
-    llmon.app_exit_button()
+    llmon.SidebarConfig.advanced_settings()
+    llmon.SidebarConfig.app_exit_button()
 
 if st.session_state.model_loaded:
     for message in st.session_state.messages:
@@ -60,9 +66,9 @@ if st.session_state.model_loaded:
         st.toast(body='🍋 :orange[generating...]')
         user_prompt = user_text_prompt
         if user_text_prompt == " ":
-            user_prompt = llmon.voice_to_text()
+            user_prompt = llmon.Audio.voice_to_text()
 
-        final_prompt = llmon.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'])
+        final_prompt = llmon.ChatTemplates.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'])
         with st.chat_message(name="user"):
             st.markdown(user_prompt)
             if st.session_state.bytes_data:
@@ -102,15 +108,12 @@ if st.session_state.model_loaded:
                     llmon.SDXLTurbo.generate_image(prompt=value_name[0])
                     no_text_output = True
                 
-                #if func_name == "answer_other_questions":
-                    #st.session_state.function_results = "func_reply"
-                
                 if func_name == "video_player":
-                    st.session_state.video_link = llmon.FunctionCall.youtube_download(link=value_name[0])
+                    st.session_state.video_link = llmon.Functions.youtube_download(link=value_name[0])
                     st.session_state.first_watch = False
                     no_text_output = True
 
-                final_prompt = llmon.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results)
+                final_prompt = llmon.ChatTemplates.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results)
                 if no_text_output == False:
                     model_output = st.session_state["chat_model"](prompt=final_prompt,
                                                         repeat_penalty=float(st.session_state['repeat_penalty']),
@@ -126,7 +129,7 @@ if st.session_state.model_loaded:
         except: pass
 
         if st.session_state['mute_melo'] == False and no_text_output == False:
-            llmon.melo_gen_message(message=model_response)
+            llmon.Audio.melo_gen_message(message=model_response)
 
         with st.chat_message(name="assistant", avatar="🍋"):
             try:
