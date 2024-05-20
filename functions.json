@@ -1,47 +1,5 @@
 [
   {
-    "name": "answer_other_questions",
-    "description": "Respond to the users request if no other function call is required.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "user_message": {
-          "type": "string",
-          "description": "User message to answer. Example: 'hello', 'can bugs think?' ."
-        }
-      },
-      "required": ["user_message"]
-    }
-  },
-  {
-    "name": "get_city_weather",
-    "description": "Get the current weather forcast of a city.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "city_name": {
-          "type": "string",
-          "description": "The city name to search up live weather data for."
-        }
-      },
-      "required": ["city_name"]
-    }
-  },
-  {
-    "name": "get_stock_price",
-    "description": "Get the latest price of a stock.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "symbol": {
-          "type": "string",
-          "description": "The stock symbol to look up."
-        }
-      },
-      "required": ["symbol"]
-    }
-  },
-  {
     "name": "describe_image",
     "description": "Answer questions about an image.",
     "parameters": {
@@ -53,20 +11,6 @@
         }
       },
       "required": ["user_query"]
-    }
-  },
-  {
-    "name": "get_news",
-    "description": "Gets the latest news from RSS feeds.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "num_of_articles": {
-          "type": "integer",
-          "description": "Number of articles to present. Default is 3."
-        }
-      },
-      "required": ["num_of_articles"]
     }
   },
   {
