@@ -10,6 +10,7 @@ Currently using SDXL Turbo and Moondream2 for image generation/vision.
 
 Can be deployed using ngrok in minutes. Easily modified.
 
-![image](https://github.com/3eeps/llmon-py/assets/55860052/f3b22971-e4bf-414e-929e-78de7956271a)
+![image](https://github.com/3eeps/llmon-py/assets/55860052/b10de8fd-4b30-4f70-ae7a-b5dc4aeca353)
+
 
 
