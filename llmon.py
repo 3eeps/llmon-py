@@ -83,7 +83,12 @@ def init_state():
 class ChatTemplate:
     def update_chat_template(prompt="", template_type="", function_result="", function_calls=False):
         template = ""
-        # mistral
+
+
+        # mistral template:
+        # organize this for to remove duplicate shit
+
+
         if template_type == "func_mistral" and function_calls:
             func_mistral = f"""<s>[INST]You are a function calling AI model. You are provided with the following functions: 
             Functions: {json.dumps(st.session_state.functions)}
@@ -95,9 +100,8 @@ class ChatTemplate:
             normal_reply = False
             if function_result == "func_reply":
                 normal_reply = True
-                func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users best friend.
-                You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
-                The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}
+                func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
+                The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}
                 {prompt} [/INST]"""
                 template = func_mistral
 
@@ -113,6 +117,7 @@ class ChatTemplate:
 
         # function calling disabled
         elif template_type == "func_mistral" and function_calls == False:
+
             func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
             The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Our conversation history: {st.session_state['message_list']}
             {prompt} [/INST]"""
@@ -133,9 +138,8 @@ class ChatTemplate:
             normal_reply = False
             if function_result == "func_reply":
                 normal_reply = True
-                system_message = f"""You are an AI assistant who acts more as the users friend.
-                You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
-                The user is roughly 35 years old and is well versed in most topics. Do not answer questions in long paragraphs but more quick and precise. Act more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}"""
+                system_message = f"""You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
+                The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}"""
                 func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
                 template = func_llama3
 
@@ -153,9 +157,8 @@ class ChatTemplate:
                 
         # function calling disabled
         elif template_type == "func_llama3" and function_calls == False:
-            system_message = f"""You are an AI assistant who acts more as the users best friend.
-            You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
-            The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}"""
+            system_message = f"""You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
+            The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}"""
             func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
             template = func_llama3
 
@@ -189,25 +192,25 @@ class Audio:
 class SidebarConfig:
     def memory_display():
         GPUs = GPU.getGPUs()
-        gpu = GPUs[0]
-        mem_total = 100 / gpu.memoryTotal
-        mem_used = 100 / int(gpu.memoryUsed)
-        total_ = mem_total / mem_used
-        if  total_ < 0.5:
-            st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "gpu memory: :green[{0:.0f}/{1:.0f}gb]".format(gpu.memoryUsed, gpu.memoryTotal))
-        if  total_ > 0.5:
-            if total_ < 0.75:
-                st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "gpu memory: :orange[{0:.0f}/{1:.0f}gb]".format(gpu.memoryUsed, gpu.memoryTotal))
-        if  total_ > 0.75:
-            st.progress((100 / gpu.memoryTotal) / (100 / int(gpu.memoryUsed)), "gpu memory: :red[{0:.0f}/{1:.0f}gb]".format(gpu.memoryUsed, gpu.memoryTotal))  
         memory_usage = psutil.virtual_memory()
+        mem_total = 100 / GPUs[0].memoryTotal
+        mem_used = 100 / int(GPUs[0].memoryUsed)
+        total_ = mem_total / mem_used
+        memory_text_color = 'orange'
+        vram_text_color = 'orange'
+        
+        if  total_ < 0.5:
+            vram_text_color = 'green'
+        if  total_ > 0.75:
+            vram_text_color = 'red'
+        vram_text = f"gpu memory: :{vram_text_color}" + "[{0:.0f}/{1:.0f}gb]"
+        st.progress((100 / GPUs[0].memoryTotal) / (100 / int(GPUs[0].memoryUsed)), vram_text.format(GPUs[0].memoryUsed, GPUs[0].memoryTotal))  
+
         if memory_usage.percent < 50.0:
-            st.progress((memory_usage.percent / 100), f"system memory: :green[{memory_usage.percent}%]")
-        if memory_usage.percent > 50.0:
-            if memory_usage.percent < 70.0:
-                st.progress((memory_usage.percent / 100), f"system memory: :orange[{memory_usage.percent}%]")
+            memory_text_color = 'green'
         if memory_usage.percent > 70.0:
-            st.progress((memory_usage.percent / 100), f"system memory: :red[{memory_usage.percent}%]")
+            memory_text_color = 'red'
+        st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
 
     def display_buttons():
         st.markdown("""
@@ -221,7 +224,7 @@ class SidebarConfig:
                     }
                 </style>
                 """, unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1, 1, 1])
+        col1, col2, col3 = st.columns([1,1,1])
         with col1:
             exit_app = st.button(":red[shutdown]", help='after clicking, close tab')
             if exit_app:
