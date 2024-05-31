@@ -6,19 +6,6 @@ from melo_tts.api import TTS
 from pywhispercpp.model import Model
 from llama_cpp import Llama
 
-# make mini app to run streamlit from phone, etc, just run bat
-    #os.system(r"C:/Users/User/desktop/llmonpy.bat ")
-
-# add saving context.. easy? save to json
-
-# add support for mistral code model or wavecoder6.7b
-
-# try new moondream, also try ggufs!
-
-# add option to upload pdfs and access whats inside? scan the images too?
-
-# add a check (a file) and if the file is there, you are the host... hopefully i can load model right away when connected remotely
-
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="expanded")
 if 'app_state_init' not in st.session_state:
     llmon.init_state()
