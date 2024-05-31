@@ -15,6 +15,16 @@ from diffusers import AutoPipelineForText2Image
 from PIL import Image
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+def model_inference(prompt=""):
+    model_output = st.session_state["chat_model"](prompt=prompt,
+                                                        repeat_penalty=float(st.session_state['repeat_penalty']),
+                                                        max_tokens=st.session_state['max_context'], 
+                                                        top_k=int(st.session_state['model_top_k']),
+                                                        top_p=float(st.session_state['model_top_p']),
+                                                        min_p=float(st.session_state['model_min_p']),
+                                                        temperature=float(st.session_state['model_temperature']))
+    return model_output['choices'][0]['text'], model_output['usage']['total_tokens']
+
 def scan_dir(directory):
     directory_list = []
     for file in os.scandir(f'{directory}'):
@@ -50,6 +60,7 @@ def init_state():
                             'app_state_init': True,
                             'mute_melo': True,
                             'model_select': 'llama-3-8b-instruct.gguf'}
+    st.session_state.function_calls = False
     st.session_state.model_picked = 'llama-3-8b-instruct.gguf'
     st.session_state.enable_moondream = False
     st.session_state.enable_sdxl_turbo = False
@@ -69,10 +80,11 @@ def init_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
-class ChatTemplates:
-    def update_chat_template(prompt="", template_type="", function_result=""):
+class ChatTemplate:
+    def update_chat_template(prompt="", template_type="", function_result="", function_calls=False):
         template = ""
-        if template_type == "func_mistral":
+        # mistral
+        if template_type == "func_mistral" and function_calls:
             func_mistral = f"""<s>[INST]You are a function calling AI model. You are provided with the following functions: 
             Functions: {json.dumps(st.session_state.functions)}
             When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
@@ -85,12 +97,12 @@ class ChatTemplates:
                 normal_reply = True
                 func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users best friend.
                 You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
-                The user is roughly 35 years old and is well versed in most topics. Do not answer questions in long paragraphs but more quick and precise. Act more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}
+                The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}
                 {prompt} [/INST]"""
                 template = func_mistral
 
             if len(function_result) > 1 and normal_reply == False:
-                func_mistral = f"""<s>[INST]The user has asked this question: {prompt}. {function_result}. [/INST]"""
+                func_mistral = f"""The user has asked this question: {prompt}. Use this data that is up to date to reply: {function_result}."""
                 template = func_mistral
 
             if len(st.session_state.sys_prompt) > 1:
@@ -99,42 +111,53 @@ class ChatTemplates:
                 {prompt} [/INST]"""
                 template = func_mistral
 
-        if template_type == "func_llama3":
+        # function calling disabled
+        elif template_type == "func_mistral" and function_calls == False:
+            func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
+            The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Our conversation history: {st.session_state['message_list']}
+            {prompt} [/INST]"""
+            template = func_mistral
+
+        # llama3
+        if template_type == "func_llama3" and function_calls:
             system_message = f"""As an AI assistant with function calling support, you are provided with the following functions: 
             Functions: {json.dumps(st.session_state.functions)}
             Chat history: {st.session_state['message_list']}
             When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
             Only output functions found in the json file provided to you. Do not describe the function, 'present it', or wrap it in markdown. Do not say: Here is the function call:"""
             system_message_plus_example = """Example: User: 'play brother ali take me home' You: '{'function_name': 'video_player', 'parameters': {'youtube_query': 'brother ali take me home'}}'"""
-            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
-            {system_message + system_message_plus_example}<|eot_id|><|start_header_id|>user<|end_header_id|>
-            {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message + system_message_plus_example}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
             template = func_llama3
 
+            # chat prompt
             normal_reply = False
             if function_result == "func_reply":
                 normal_reply = True
-                system_message = f"""You are an AI assistant who acts more as the users best friend.
+                system_message = f"""You are an AI assistant who acts more as the users friend.
                 You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
                 The user is roughly 35 years old and is well versed in most topics. Do not answer questions in long paragraphs but more quick and precise. Act more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}"""
-                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
-                {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
-                {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
                 template = func_llama3
 
+            # function called prompt
             if len(function_result) > 1 and normal_reply == False:
-                system_message = f"""The user has asked this question: {prompt}. Answer with this data that is up to date: {function_result}."""
-                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
-                {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
-                {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+                system_message = f"""The user has asked this question: {prompt}. Use this data that is up to date to reply: {function_result}."""
+                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
                 template = func_llama3
 
+            # custom prompt
             if len(st.session_state.sys_prompt) > 1:
                 system_message = f"""{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}"""
-                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>
-                {system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
-                {prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
                 template = func_llama3
+                
+        # function calling disabled
+        elif template_type == "func_llama3" and function_calls == False:
+            system_message = f"""You are an AI assistant who acts more as the users best friend.
+            You do not tell the user you are going to answer any request they may have, but will also maintain a laid back and chilled out response to any inquiries the user has.
+            The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Conversation history: {st.session_state['message_list']}"""
+            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+            template = func_llama3
 
         return template
 
@@ -198,38 +221,34 @@ class SidebarConfig:
                     }
                 </style>
                 """, unsafe_allow_html=True)
-        col1, col2 = st.columns([1, 1])
+        col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            st.button(label=':orange[load/refresh]')
+            exit_app = st.button(":red[shutdown]", help='after clicking, close tab')
+            if exit_app:
+                clear_vram()
+                try:
+                    os.remove('.google-cookie')
+                except: pass
+                keyboard.press_and_release('ctrl+w')
+                process_id = os.getpid()
+                process = psutil.Process(process_id)
+                process.terminate()
         with col2:
+            st.button(label=':orange[load/refresh]')
+        with col3:
             if st.button(label=':orange[clear context]'):
                 st.session_state['message_list'] = []
                 st.session_state.messages = []
                 st.session_state['model_output_tokens'] = 0
 
-    @st.experimental_fragment
-    def app_exit_button():
-        exit_app = st.button(":red[restart app]", help='after clicking, close tab, visit llmon-py again')
-        if exit_app:
-            clear_vram()
-            try:
-                os.remove('.google-cookie')
-            except: pass
-            keyboard.press_and_release('ctrl+w')
-            os.system(r"C:/Users/User/desktop/llmonpy.bat ")
-            pid = os.getpid()
-            p = psutil.Process(pid)
-            p.terminate()
-            
     st.experimental_fragment
     def select_model():
         st.session_state['model_select'] = st.selectbox(label=':orange[model]', options=st.session_state.model_list, label_visibility='collapsed')
         if st.session_state.model_picked != st.session_state['model_select']:
-            try:
-                del st.session_state['chat_model']
-                st.session_state.model_picked = None
-                st.rerun()
-            except: pass
+            del st.session_state['chat_model']
+            st.session_state.model_picked = None
+            st.rerun()
+
         st.session_state.model_loaded = True
         st.session_state.model_picked = st.session_state['model_select']
         if st.session_state['model_select'] == 'mistral-7b-instruct.gguf':
@@ -240,7 +259,8 @@ class SidebarConfig:
     @st.experimental_fragment
     def advanced_settings():
         if st.checkbox(label=':orange[advanced settings]'):
-            st.session_state['mute_melo'] = st.checkbox(':orange[mute text-to-speech]', value=st.session_state['mute_melo'])
+            st.session_state.function_calls = st.toggle(':orange[enable function calling]', value=st.session_state.function_calls)
+            st.session_state['mute_melo'] = st.toggle(':orange[mute text-to-speech]', value=st.session_state['mute_melo'])
             st.caption(body="function models")
             st.session_state.enable_moondream = st.toggle(label=':orange[moondream]', value=st.session_state.enable_moondream)
             st.session_state.enable_sdxl_turbo = st.toggle(label=':orange[sdxl turbo]', value=st.session_state.enable_sdxl_turbo)

@@ -6,11 +6,18 @@ from melo_tts.api import TTS
 from pywhispercpp.model import Model
 from llama_cpp import Llama
 
-
+# make mini app to run streamlit from phone, etc, just run bat
+    #os.system(r"C:/Users/User/desktop/llmonpy.bat ")
 
 # add saving context.. easy? save to json
 
+# add support for mistral code model or wavecoder6.7b
 
+# try new moondream, also try ggufs!
+
+# add option to upload pdfs and access whats inside? scan the images too?
+
+# add a check (a file) and if the file is there, you are the host... hopefully i can load model right away when connected remotely
 
 st.set_page_config(page_title="model inference", page_icon="🍋", layout="wide", initial_sidebar_state="expanded")
 if 'app_state_init' not in st.session_state:
@@ -55,7 +62,6 @@ with st.sidebar:
             with open("ocr_upload_image.png", 'wb') as file:
                 file.write(st.session_state.bytes_data)
     llmon.SidebarConfig.advanced_settings()
-    llmon.SidebarConfig.app_exit_button()
 
 if st.session_state.model_loaded:
     for message in st.session_state.messages:
@@ -68,7 +74,7 @@ if st.session_state.model_loaded:
         if user_text_prompt == " ":
             user_prompt = llmon.Audio.voice_to_text()
 
-        final_prompt = llmon.ChatTemplates.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'])
+        final_prompt = llmon.ChatTemplate.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'])
         with st.chat_message(name="user"):
             st.markdown(user_prompt)
             if st.session_state.bytes_data:
@@ -79,16 +85,8 @@ if st.session_state.model_loaded:
                 except: pass
             st.session_state.messages.append({"role": "user", "content": user_prompt})
             st.session_state['message_list'].append(f"""user: {user_prompt}""")
-
-        model_output = st.session_state["chat_model"](prompt=final_prompt,
-                                                        repeat_penalty=float(st.session_state['repeat_penalty']),
-                                                        max_tokens=st.session_state['max_context'], 
-                                                        top_k=int(st.session_state['model_top_k']),
-                                                        top_p=float(st.session_state['model_top_p']),
-                                                        min_p=float(st.session_state['model_min_p']),
-                                                        temperature=float(st.session_state['model_temperature']))
-        model_response = model_output['choices'][0]['text']
-        st.session_state['model_output_tokens'] = model_output['usage']['total_tokens']
+        model_output_text, st.session_state['model_output_tokens'] = llmon.model_inference(prompt=final_prompt)
+        model_response = model_output_text
 
         try:
             output_dict = eval(model_response)
@@ -101,6 +99,9 @@ if st.session_state.model_loaded:
                 remove_slash = func_name.replace("\\", "")
                 func_name = remove_slash
                 
+                if func_name == "answer_other_questions":
+                    st.session_state.function_results = "func_reply"
+
                 if func_name == "describe_image":
                     st.session_state.function_results = llmon.Moondream.generate_response(prompt=value_name[0])
 
@@ -113,19 +114,12 @@ if st.session_state.model_loaded:
                     st.session_state.first_watch = False
                     no_text_output = True
 
-                final_prompt = llmon.ChatTemplates.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results)
+                final_prompt = llmon.ChatTemplate.update_chat_template(prompt=user_prompt, template_type=st.session_state['template_select'], function_result=st.session_state.function_results, function_calls=st.session_state.function_calls)
                 if no_text_output == False:
-                    model_output = st.session_state["chat_model"](prompt=final_prompt,
-                                                        repeat_penalty=float(st.session_state['repeat_penalty']),
-                                                        max_tokens=st.session_state['max_context'], 
-                                                        top_k=int(st.session_state['model_top_k']),
-                                                        top_p=float(st.session_state['model_top_p']),
-                                                        min_p=float(st.session_state['model_min_p']),
-                                                        temperature=float(st.session_state['model_temperature']))
-                    model_response = model_output['choices'][0]['text']
+                    model_output_text, st.session_state['model_output_tokens'] = llmon.model_inference(prompt=final_prompt)
+                    model_response = model_output_text
                 if no_text_output: 
                     model_response = ""
-                st.session_state['model_output_tokens'] = model_output['usage']['total_tokens']
         except: pass
 
         if st.session_state['mute_melo'] == False and no_text_output == False:
