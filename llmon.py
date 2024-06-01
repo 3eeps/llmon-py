@@ -175,11 +175,10 @@ class Audio:
         os.remove('melo_tts_playback.wav')
 
     def voice_to_text():
-        speech_model_path = './speech models'
         rec_user_voice = sounddevice.rec(int(st.session_state['user_audio_length']) * 44100, samplerate=44100, channels=2)
         sounddevice.wait()
         write_wav(filename='user_output.wav', rate=44100, data=rec_user_voice)
-        st.session_state['speech_tt_model'] = Model(models_dir=speech_model_path, n_threads=10)
+        st.session_state['speech_tt_model'] = Model(models_dir='./ggml-tiny.bin', n_threads=10)
         user_voice_data = st.session_state['speech_tt_model'].transcribe('user_output.wav', speed_up=True)
         os.remove(f"user_output.wav")
         text_data = []
