@@ -1,4 +1,3 @@
-# ./codespace/llmon.py
 import streamlit as st
 import os
 import torch
@@ -62,6 +61,77 @@ def init_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
+def sidebar():
+    GPUs = GPU.getGPUs()
+    memory_usage = psutil.virtual_memory()
+    mem_total = 100 / GPUs[0].memoryTotal
+    mem_used = 100 / int(GPUs[0].memoryUsed)
+    total_ = mem_total / mem_used
+    memory_text_color = 'orange'
+    vram_text_color = 'orange'
+
+    st.markdown("""
+            <style>
+                div[data-testid="column"] {
+                    width: fit-content !important;
+                    flex: unset;
+                }
+                div[data-testid="column"] {
+                    width: fit-content !important;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+    col1, col2 = st.columns([1,1])
+    with col1:
+        exit_app = st.button(":red[shutdown]", help='after clicking, close tab')
+        if exit_app:
+            clear_vram()
+            try:
+                os.remove('.google-cookie')
+            except: pass
+            keyboard.press_and_release('ctrl+w')
+            llmon_process_id = os.getpid()
+            process = psutil.Process(llmon_process_id)
+            process.terminate()
+    with col2:
+        if st.button(label=':orange[clear context]'):
+            st.session_state['message_list'] = []
+            st.session_state.messages = []
+            st.session_state['model_output_tokens'] = 0
+
+    st.caption(f"context used: :orange[{st.session_state['model_output_tokens']}/{st.session_state['max_context']}]")
+
+    uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
+    if uploaded_file:
+        st.session_state.bytes_data = uploaded_file.getvalue()
+        with open("ocr_upload_image.png", 'wb') as file:
+            file.write(st.session_state.bytes_data)
+
+    if st.checkbox(label=':orange[advanced settings]'):
+        if  total_ < 0.5:
+            vram_text_color = 'green'
+        if  total_ > 0.75:
+            vram_text_color = 'red'
+        vram_display_text = f"gpu memory: :{vram_text_color}" + "[{0:.0f}/{1:.0f}gb]"
+        st.progress((100 / GPUs[0].memoryTotal) / (100 / int(GPUs[0].memoryUsed)), vram_display_text.format(GPUs[0].memoryUsed, GPUs[0].memoryTotal))  
+
+        if memory_usage.percent < 50.0:
+            memory_text_color = 'green'
+        if memory_usage.percent > 70.0:
+            memory_text_color = 'red'
+
+        st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
+        st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
+        st.session_state['mute_melo'] = st.toggle(':orange[mute text-to-speech]', value=st.session_state['mute_melo'])
+        st.caption(body="custom model template")
+        st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
+        st.caption(body="model parameters")
+        st.session_state['model_temperature'] = st.text_input(label=':orange[temperature]', value=st.session_state['model_temperature'])
+        st.session_state['model_top_p'] = st.text_input(label=':orange[top p]', value=st.session_state['model_top_p'] )
+        st.session_state['model_top_k'] = st.text_input(label=':orange[top k]', value=st.session_state['model_top_k'])
+        st.session_state['model_min_p'] = st.text_input(label=':orange[min p]', value=st.session_state['model_min_p'])
+        st.session_state['repeat_penalty'] = st.text_input(label=':orange[repeat_penalty]', value=st.session_state['repeat_penalty'])
+
 class ChatTemplate:
     def chat_template(prompt="", function_result=""):
         system_message = f"""You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
@@ -69,7 +139,6 @@ class ChatTemplate:
         template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
         if st.session_state.function_calling:
-            # function output template for llama3-instruct
             system_message = f"""As an AI assistant with function calling support, you are provided with the following functions: 
             Functions: {json.dumps(st.session_state.functions)}
             Chat history: {st.session_state['message_list']}
@@ -78,7 +147,6 @@ class ChatTemplate:
             system_message_plus_example = """Example: User: 'play brother ali take me home' You: '{'function_name': 'video_player', 'parameters': {'youtube_query': 'brother ali take me home'}}'"""
             template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message + system_message_plus_example}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-            # function chat
             normal_reply = False
             if function_result == "func_reply":
                 normal_reply = True
@@ -86,12 +154,10 @@ class ChatTemplate:
                 The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}"""
                 template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-            # function reply
             if len(function_result) > 1 and normal_reply == False:
                 system_message = f"""Using this data that is up to date, reply to the user using it: {function_result}. The question the user asked was:"""
                 template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-        # custom user template
         if len(st.session_state.sys_prompt) > 1:
             system_message = f"""{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}"""
             template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""                 
@@ -121,84 +187,6 @@ class Audio:
             text_data.append(voice.text)
         combined_text = ' '.join(text_data)
         return combined_text
-
-class SidebarConfig:
-    def sidebar():
-        # init memory trackers
-        GPUs = GPU.getGPUs()
-        memory_usage = psutil.virtual_memory()
-        mem_total = 100 / GPUs[0].memoryTotal
-        mem_used = 100 / int(GPUs[0].memoryUsed)
-        total_ = mem_total / mem_used
-        memory_text_color = 'orange'
-        vram_text_color = 'orange'
-
-        # draw buttons
-        st.markdown("""
-                <style>
-                    div[data-testid="column"] {
-                        width: fit-content !important;
-                        flex: unset;
-                    }
-                    div[data-testid="column"] {
-                        width: fit-content !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-        col1, col2 = st.columns([1,1])
-        with col1:
-            exit_app = st.button(":red[shutdown]", help='after clicking, close tab')
-            if exit_app:
-                clear_vram()
-                try:
-                    os.remove('.google-cookie')
-                except: pass
-                keyboard.press_and_release('ctrl+w')
-                llmon_process_id = os.getpid()
-                process = psutil.Process(llmon_process_id)
-                process.terminate()
-        with col2:
-            if st.button(label=':orange[clear context]'):
-                st.session_state['message_list'] = []
-                st.session_state.messages = []
-                st.session_state['model_output_tokens'] = 0
-
-        # context remaining
-        st.caption(f"context used: :orange[{st.session_state['model_output_tokens']}/{st.session_state['max_context']}]")
-
-        # file uploader
-        uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
-        if uploaded_file:
-            st.session_state.bytes_data = uploaded_file.getvalue()
-            with open("ocr_upload_image.png", 'wb') as file:
-                file.write(st.session_state.bytes_data)
-    
-        # advanced settings menu
-        if st.checkbox(label=':orange[advanced settings]'):
-            # gpu memory bar
-            if  total_ < 0.5:
-                vram_text_color = 'green'
-            if  total_ > 0.75:
-                vram_text_color = 'red'
-            vram_display_text = f"gpu memory: :{vram_text_color}" + "[{0:.0f}/{1:.0f}gb]"
-            st.progress((100 / GPUs[0].memoryTotal) / (100 / int(GPUs[0].memoryUsed)), vram_display_text.format(GPUs[0].memoryUsed, GPUs[0].memoryTotal))  
-
-            # sys memory bar
-            if memory_usage.percent < 50.0:
-                memory_text_color = 'green'
-            if memory_usage.percent > 70.0:
-                memory_text_color = 'red'
-            st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
-            st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
-            st.session_state['mute_melo'] = st.toggle(':orange[mute text-to-speech]', value=st.session_state['mute_melo'])
-            st.caption(body="custom model template")
-            st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
-            st.caption(body="model parameters")
-            st.session_state['model_temperature'] = st.text_input(label=':orange[temperature]', value=st.session_state['model_temperature'])
-            st.session_state['model_top_p'] = st.text_input(label=':orange[top p]', value=st.session_state['model_top_p'] )
-            st.session_state['model_top_k'] = st.text_input(label=':orange[top k]', value=st.session_state['model_top_k'])
-            st.session_state['model_min_p'] = st.text_input(label=':orange[min p]', value=st.session_state['model_min_p'])
-            st.session_state['repeat_penalty'] = st.text_input(label=':orange[repeat_penalty]', value=st.session_state['repeat_penalty'])
 
 class Functions:
     def find_youtube_link(user_query=str):
