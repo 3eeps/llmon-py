@@ -4,7 +4,6 @@ import torch
 import sounddevice
 import GPUtil as GPU
 import psutil
-import base64
 import json
 import keyboard
 from scipy.io.wavfile import write as write_wav
@@ -44,7 +43,6 @@ def init_state():
                             'repeat_penalty': 1.1,
                             'message_list': [],
                             'init_app': True,
-                            'mute_melo': True,
                             'model_select': 'llama-3-8b-instruct.gguf'}
     st.session_state.function_calling = False
     st.session_state.sys_prompt = ""
@@ -122,7 +120,6 @@ def sidebar():
 
         st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
         st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
-        st.session_state['mute_melo'] = st.toggle(':orange[mute text-to-speech]', value=st.session_state['mute_melo'])
         st.caption(body="custom model template")
         st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
         st.caption(body="model parameters")
@@ -164,16 +161,6 @@ class ChatTemplate:
         return template
 
 class Audio:
-    def melo_gen_message(message=str):
-        output_path = 'melo_tts_playback.wav'
-        st.session_state['melo_model'].tts_to_file(text=message, speaker_id=st.session_state['speaker_ids']['EN-AU'], output_path=output_path, speed=1.0)
-        with open(output_path, "rb") as file:
-            data = file.read()
-        audio_base64 = base64.b64encode(data).decode('utf-8')
-        audio_tag = f'<audio autoplay="true" src="data:audio/wav;base64,{audio_base64}">'
-        st.markdown(audio_tag, unsafe_allow_html=True)
-        os.remove('melo_tts_playback.wav')
-
     def voice_to_text():
         rec_user_voice = sounddevice.rec(int(st.session_state['user_audio_length']) * 44100, samplerate=44100, channels=2)
         sounddevice.wait()

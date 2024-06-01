@@ -1,7 +1,6 @@
 import streamlit as st
 import llmon
 import os
-from melo_tts.api import TTS
 from pywhispercpp.model import Model
 from llama_cpp import Llama
 
@@ -28,10 +27,6 @@ if "moondream" not in st.session_state:
 
 if "sdxl_turbo" not in st.session_state:
     llmon.SDXLTurbo.init()
-
-if 'melo_model' not in st.session_state:
-    st.session_state['melo_model'] = TTS(language='EN', device='auto')
-    st.session_state['speaker_ids'] = st.session_state['melo_model'].hps.data.spk2id
 
 if 'speech_tt_model' not in st.session_state:
     st.session_state['speech_tt_model'] = Model(models_dir='./speech models', n_threads=10)
@@ -92,9 +87,6 @@ if user_text_prompt:= st.chat_input(placeholder=''):
             if no_text_output: 
                 model_output_text = ""
     except: pass
-
-    if st.session_state['mute_melo'] == False and no_text_output == False:
-        llmon.Audio.melo_gen_message(message=model_output_text)
 
     with st.chat_message(name="assistant", avatar="🍋"):
         try:
