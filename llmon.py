@@ -25,23 +25,10 @@ def model_inference(prompt=""):
                                                         temperature=float(st.session_state['model_temperature']))
     return model_output['choices'][0]['text'], model_output['usage']['total_tokens']
 
-def scan_dir(directory):
-    directory_list = []
-    for file in os.scandir(f'{directory}'):
-        if file.is_file():
-            directory_list.append(file.name)
-    return directory_list or None
-
 def clear_vram():
-    model_list = ['chat_model', 'image_pipe_turbo', 'moondream', 'melo_model', 'speaker_ids', 'speech_tt_model']
-    toggled_on_list = ['enable_moondream', 'enable_sdxl_turbo']
-    for toggle in toggled_on_list:
-        if st.session_state[toggle]:
-            st.session_state[toggle] = False
-    for model in model_list:
-        try:
-            del st.session_state[model]
-        except: pass
+    model_list = ['chat_model', 'sdxl_turbo', 'moondream']
+    for model_in_vram in model_list:
+        del st.session_state[model_in_vram]
 
 def init_state():
     default_settings_state = {'user_audio_length': 8,
@@ -57,111 +44,57 @@ def init_state():
                             'model_min_p': 0.06,
                             'repeat_penalty': 1.1,
                             'message_list': [],
-                            'app_state_init': True,
+                            'init_app': True,
                             'mute_melo': True,
                             'model_select': 'llama-3-8b-instruct.gguf'}
-    st.session_state.function_calls = False
-    st.session_state.model_picked = 'llama-3-8b-instruct.gguf'
-    st.session_state.enable_moondream = False
-    st.session_state.enable_sdxl_turbo = False
-    st.session_state.pause_model_load = False
-    with open("functions.json", "r") as file:
-        st.session_state.functions = json.load(file)
-    st.session_state.disable_chat = True
-    st.session_state.model_loaded = False
+    st.session_state.function_calling = False
     st.session_state.sys_prompt = ""
-    st.session_state.model_list = scan_dir('./models')
-    st.session_state.chat_templates = ['func_llama3', 'func_mistral']
+    st.session_state.chat_template = 'llama3'
     st.session_state.video_link = None
     st.session_state.first_watch = False
     st.session_state.function_results = ""
     st.session_state.bytes_data = None
+
+    with open("functions.json", "r") as file:
+        st.session_state.functions = json.load(file)
+
     for key, value in default_settings_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
 
 class ChatTemplate:
-    def update_chat_template(prompt="", template_type="", function_result="", function_calls=False):
-        template = ""
+    def chat_template(prompt="", function_result=""):
+        system_message = f"""You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
+        The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}"""
+        template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-
-        # mistral template:
-        # organize this for to remove duplicate shit
-
-
-        if template_type == "func_mistral" and function_calls:
-            func_mistral = f"""<s>[INST]You are a function calling AI model. You are provided with the following functions: 
-            Functions: {json.dumps(st.session_state.functions)}
-            When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
-            Do not describe the function. Only output functions found in the json file provided to you.
-            {prompt} [/INST]"""
-            template = func_mistral
-
-            normal_reply = False
-            if function_result == "func_reply":
-                normal_reply = True
-                func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
-                The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}
-                {prompt} [/INST]"""
-                template = func_mistral
-
-            if len(function_result) > 1 and normal_reply == False:
-                func_mistral = f"""The user has asked this question: {prompt}. Use this data that is up to date to reply: {function_result}."""
-                template = func_mistral
-
-            if len(st.session_state.sys_prompt) > 1:
-                func_mistral = f"""<s>[INST]{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}
-
-                {prompt} [/INST]"""
-                template = func_mistral
-
-        # function calling disabled
-        elif template_type == "func_mistral" and function_calls == False:
-
-            func_mistral = f"""<s>[INST]You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
-            The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then a AI assistant. Our conversation history: {st.session_state['message_list']}
-            {prompt} [/INST]"""
-            template = func_mistral
-
-        # llama3
-        if template_type == "func_llama3" and function_calls:
+        if st.session_state.function_calling:
+            # function output template for llama3-instruct
             system_message = f"""As an AI assistant with function calling support, you are provided with the following functions: 
             Functions: {json.dumps(st.session_state.functions)}
             Chat history: {st.session_state['message_list']}
             When the user asks a question that can be answered with one of the above functions, only output the function filled with the appropriate data required as a python dictionary.
             Only output functions found in the json file provided to you. Do not describe the function, 'present it', or wrap it in markdown. Do not say: Here is the function call:"""
             system_message_plus_example = """Example: User: 'play brother ali take me home' You: '{'function_name': 'video_player', 'parameters': {'youtube_query': 'brother ali take me home'}}'"""
-            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message + system_message_plus_example}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-            template = func_llama3
+            template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message + system_message_plus_example}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-            # chat prompt
+            # function chat
             normal_reply = False
             if function_result == "func_reply":
                 normal_reply = True
                 system_message = f"""You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
                 The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}"""
-                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-                template = func_llama3
+                template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-            # function called prompt
+            # function reply
             if len(function_result) > 1 and normal_reply == False:
-                system_message = f"""The user has asked this question: {prompt}. Use this data that is up to date to reply: {function_result}."""
-                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-                template = func_llama3
+                system_message = f"""Using this data that is up to date, reply to the user using it: {function_result}. The question the user asked was:"""
+                template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
-            # custom prompt
-            if len(st.session_state.sys_prompt) > 1:
-                system_message = f"""{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}"""
-                func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-                template = func_llama3
-                
-        # function calling disabled
-        elif template_type == "func_llama3" and function_calls == False:
-            system_message = f"""You are an AI assistant who acts more as the users friend. Provide simple and relaxed responses to any inquiries the user has.
-            The user is roughly 35 years old and is well versed in most topics. Reply more as a close friend then an AI assistant. Our conversation history: {st.session_state['message_list']}"""
-            func_llama3 = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-            template = func_llama3
-
+        # custom user template
+        if len(st.session_state.sys_prompt) > 1:
+            system_message = f"""{st.session_state.sys_prompt} Chat history: {st.session_state['message_list']}"""
+            template = f"""<|begin_of_text|<|start_header_id|>system<|end_header_id|>{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""                 
         return template
 
 class Audio:
@@ -190,7 +123,8 @@ class Audio:
         return combined_text
 
 class SidebarConfig:
-    def memory_display():
+    def sidebar():
+        # init memory trackers
         GPUs = GPU.getGPUs()
         memory_usage = psutil.virtual_memory()
         mem_total = 100 / GPUs[0].memoryTotal
@@ -198,21 +132,8 @@ class SidebarConfig:
         total_ = mem_total / mem_used
         memory_text_color = 'orange'
         vram_text_color = 'orange'
-        
-        if  total_ < 0.5:
-            vram_text_color = 'green'
-        if  total_ > 0.75:
-            vram_text_color = 'red'
-        vram_text = f"gpu memory: :{vram_text_color}" + "[{0:.0f}/{1:.0f}gb]"
-        st.progress((100 / GPUs[0].memoryTotal) / (100 / int(GPUs[0].memoryUsed)), vram_text.format(GPUs[0].memoryUsed, GPUs[0].memoryTotal))  
 
-        if memory_usage.percent < 50.0:
-            memory_text_color = 'green'
-        if memory_usage.percent > 70.0:
-            memory_text_color = 'red'
-        st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
-
-    def display_buttons():
+        # draw buttons
         st.markdown("""
                 <style>
                     div[data-testid="column"] {
@@ -224,7 +145,7 @@ class SidebarConfig:
                     }
                 </style>
                 """, unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1,1,1])
+        col1, col2 = st.columns([1,1])
         with col1:
             exit_app = st.button(":red[shutdown]", help='after clicking, close tab')
             if exit_app:
@@ -233,41 +154,44 @@ class SidebarConfig:
                     os.remove('.google-cookie')
                 except: pass
                 keyboard.press_and_release('ctrl+w')
-                process_id = os.getpid()
-                process = psutil.Process(process_id)
+                llmon_process_id = os.getpid()
+                process = psutil.Process(llmon_process_id)
                 process.terminate()
         with col2:
-            st.button(label=':orange[load/refresh]')
-        with col3:
             if st.button(label=':orange[clear context]'):
                 st.session_state['message_list'] = []
                 st.session_state.messages = []
                 st.session_state['model_output_tokens'] = 0
 
-    st.experimental_fragment
-    def select_model():
-        st.session_state['model_select'] = st.selectbox(label=':orange[model]', options=st.session_state.model_list, label_visibility='collapsed')
-        if st.session_state.model_picked != st.session_state['model_select']:
-            del st.session_state['chat_model']
-            st.session_state.model_picked = None
-            st.rerun()
+        # context remaining
+        st.caption(f"context used: :orange[{st.session_state['model_output_tokens']}/{st.session_state['max_context']}]")
 
-        st.session_state.model_loaded = True
-        st.session_state.model_picked = st.session_state['model_select']
-        if st.session_state['model_select'] == 'mistral-7b-instruct.gguf':
-            st.session_state['template_select'] = st.session_state.chat_templates[1]
-        if st.session_state['model_select'] == 'llama-3-8b-instruct.gguf':
-            st.session_state['template_select'] = st.session_state.chat_templates[0]
-
-    @st.experimental_fragment
-    def advanced_settings():
+        # file uploader
+        uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
+        if uploaded_file:
+            st.session_state.bytes_data = uploaded_file.getvalue()
+            with open("ocr_upload_image.png", 'wb') as file:
+                file.write(st.session_state.bytes_data)
+    
+        # advanced settings menu
         if st.checkbox(label=':orange[advanced settings]'):
-            st.session_state.function_calls = st.toggle(':orange[enable function calling]', value=st.session_state.function_calls)
+            # gpu memory bar
+            if  total_ < 0.5:
+                vram_text_color = 'green'
+            if  total_ > 0.75:
+                vram_text_color = 'red'
+            vram_display_text = f"gpu memory: :{vram_text_color}" + "[{0:.0f}/{1:.0f}gb]"
+            st.progress((100 / GPUs[0].memoryTotal) / (100 / int(GPUs[0].memoryUsed)), vram_display_text.format(GPUs[0].memoryUsed, GPUs[0].memoryTotal))  
+
+            # sys memory bar
+            if memory_usage.percent < 50.0:
+                memory_text_color = 'green'
+            if memory_usage.percent > 70.0:
+                memory_text_color = 'red'
+            st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
+            st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
             st.session_state['mute_melo'] = st.toggle(':orange[mute text-to-speech]', value=st.session_state['mute_melo'])
-            st.caption(body="function models")
-            st.session_state.enable_moondream = st.toggle(label=':orange[moondream]', value=st.session_state.enable_moondream)
-            st.session_state.enable_sdxl_turbo = st.toggle(label=':orange[sdxl turbo]', value=st.session_state.enable_sdxl_turbo)
-            st.caption(body="custom prompt")
+            st.caption(body="custom model template")
             st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
             st.caption(body="model parameters")
             st.session_state['model_temperature'] = st.text_input(label=':orange[temperature]', value=st.session_state['model_temperature'])
@@ -277,30 +201,30 @@ class SidebarConfig:
             st.session_state['repeat_penalty'] = st.text_input(label=':orange[repeat_penalty]', value=st.session_state['repeat_penalty'])
 
 class Functions:
-    def youtube_download(link=str):
-        helper = 'youtube'
-        query = link + helper
-        for j in search(query, tld="co.in", num=1, stop=1, pause=2):
-            print(j)
+    def find_youtube_link(user_query=str):
+        search_helper = 'youtube'
+        search_query = user_query + search_helper
+        for youtube_link in search(query=search_query, tld="co.in", num=1, stop=1, pause=2):
+            print(youtube_link)
         try:
             os.remove('.google-cookie')
         except: pass
-        return j
+        return youtube_link
 
 class SDXLTurbo:
     def init():
         st.toast(body='🍋 :orange[loading sdxl turbo...]')
-        st.session_state['image_pipe_turbo'] = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", variant="fp16").to('cpu')
+        st.session_state['sdxl_turbo'] = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", variant="fp16").to('cpu')
     
     def generate_image(prompt="", steps=1):
-        _image = st.session_state['image_pipe_turbo'](prompt=prompt, num_inference_steps=steps, guidance_scale=0.0).images[0]
+        _image = st.session_state['sdxl_turbo'](prompt=prompt, num_inference_steps=steps, guidance_scale=0.0).images[0]
         _image.save('image_turbo.png')
 
 class Moondream:
-    def load_vision_encoder():
+    def init():
+        st.toast(body='🍋 :orange[loading moondream2...]')
         model_id = "vikhyatk/moondream2"
         revision = "2024-05-08"
-        st.toast(body='🍋 :orange[loading moondream2...]')
         st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16) 
         st.session_state.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
 
