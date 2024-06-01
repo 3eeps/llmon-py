@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import torch
 import sounddevice
-import GPUtil as GPU
 import psutil
 import json
 import keyboard
@@ -44,12 +43,12 @@ def init_state():
                             'message_list': [],
                             'init_app': True,
                             'model_select': 'llama-3-8b-instruct.gguf'}
+    
     st.session_state.function_calling = False
+    st.session_state.function_results = ""
     st.session_state.sys_prompt = ""
-    st.session_state.chat_template = 'llama3'
     st.session_state.video_link = None
     st.session_state.first_watch = False
-    st.session_state.function_results = ""
     st.session_state.bytes_data = None
 
     with open("functions.json", "r") as file:
@@ -60,14 +59,6 @@ def init_state():
             st.session_state[key] = value
 
 def sidebar():
-    GPUs = GPU.getGPUs()
-    memory_usage = psutil.virtual_memory()
-    mem_total = 100 / GPUs[0].memoryTotal
-    mem_used = 100 / int(GPUs[0].memoryUsed)
-    total_ = mem_total / mem_used
-    memory_text_color = 'orange'
-    vram_text_color = 'orange'
-
     st.markdown("""
             <style>
                 div[data-testid="column"] {
@@ -98,7 +89,6 @@ def sidebar():
             st.session_state['model_output_tokens'] = 0
 
     st.caption(f"context used: :orange[{st.session_state['model_output_tokens']}/{st.session_state['max_context']}]")
-
     uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
     if uploaded_file:
         st.session_state.bytes_data = uploaded_file.getvalue()
@@ -106,19 +96,6 @@ def sidebar():
             file.write(st.session_state.bytes_data)
 
     if st.checkbox(label=':orange[advanced settings]'):
-        if  total_ < 0.5:
-            vram_text_color = 'green'
-        if  total_ > 0.75:
-            vram_text_color = 'red'
-        vram_display_text = f"gpu memory: :{vram_text_color}" + "[{0:.0f}/{1:.0f}gb]"
-        st.progress((100 / GPUs[0].memoryTotal) / (100 / int(GPUs[0].memoryUsed)), vram_display_text.format(GPUs[0].memoryUsed, GPUs[0].memoryTotal))  
-
-        if memory_usage.percent < 50.0:
-            memory_text_color = 'green'
-        if memory_usage.percent > 70.0:
-            memory_text_color = 'red'
-
-        st.progress((memory_usage.percent / 100), f"system memory: :{memory_text_color}[{memory_usage.percent}%]")
         st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
         st.caption(body="custom model template")
         st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
@@ -187,7 +164,6 @@ class Functions:
 
 class SDXLTurbo:
     def init():
-        st.toast(body='🍋 :orange[loading sdxl turbo...]')
         st.session_state['sdxl_turbo'] = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", variant="fp16").to('cpu')
     
     def generate_image(prompt="", steps=1):
@@ -196,7 +172,6 @@ class SDXLTurbo:
 
 class Moondream:
     def init():
-        st.toast(body='🍋 :orange[loading moondream2...]')
         model_id = "vikhyatk/moondream2"
         revision = "2024-05-08"
         st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16) 

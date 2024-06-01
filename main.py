@@ -13,7 +13,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "chat_model" not in st.session_state:
-    st.toast(body=f"🍋 :orange[loading {st.session_state['model_select']}...]")
+    st.toast(body=f"🍋 :orange[welcome to llmon-py...]")
     st.session_state["chat_model"] = Llama(model_path=f"./llama-3-8b-instruct.gguf",
                                             n_batch=st.session_state['batch_size'],
                                             n_threads=st.session_state['cpu_core_count'],
