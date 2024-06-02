@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import torch
 import sounddevice
 import psutil
 import json
@@ -29,7 +28,7 @@ def clear_vram():
 
 def init_state():
     default_settings_state = {'user_audio_length': 8,
-                            'max_context': 8192,
+                            'max_context': 16384,
                             'gpu_layer_count': -1,
                             'cpu_core_count': 8,
                             'cpu_batch_count': 8,
@@ -58,53 +57,37 @@ def init_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
-def sidebar():
-    st.markdown("""
-            <style>
-                div[data-testid="column"] {
-                    width: fit-content !important;
-                    flex: unset;
-                }
-                div[data-testid="column"] {
-                    width: fit-content !important;
-                }
-            </style>
-            """, unsafe_allow_html=True)
-    col1, col2 = st.columns([1,1])
-    with col1:
-        exit_app = st.button(":red[shutdown]", help='after clicking, close tab')
-        if exit_app:
-            clear_vram()
-            try:
-                os.remove('.google-cookie')
-            except: pass
-            keyboard.press_and_release('ctrl+w')
-            llmon_process_id = os.getpid()
-            process = psutil.Process(llmon_process_id)
-            process.terminate()
-    with col2:
-        if st.button(label=':orange[clear context]'):
-            st.session_state['message_list'] = []
-            st.session_state.messages = []
-            st.session_state['model_output_tokens'] = 0
+def sidebar(): 
+    if st.button(label=':orange[new chat]'):
+        st.session_state['message_list'] = []
+        st.session_state.messages = []
+        st.session_state['model_output_tokens'] = 0
+        st.session_state.function_calling = False
 
-    st.caption(f"context used: :orange[{st.session_state['model_output_tokens']}/{st.session_state['max_context']}]")
     uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
     if uploaded_file:
         st.session_state.bytes_data = uploaded_file.getvalue()
         with open("ocr_upload_image.png", 'wb') as file:
             file.write(st.session_state.bytes_data)
 
-    if st.checkbox(label=':orange[advanced settings]'):
-        st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
-        st.caption(body="custom model template")
-        st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
-        st.caption(body="model parameters")
-        st.session_state['model_temperature'] = st.text_input(label=':orange[temperature]', value=st.session_state['model_temperature'])
-        st.session_state['model_top_p'] = st.text_input(label=':orange[top p]', value=st.session_state['model_top_p'] )
-        st.session_state['model_top_k'] = st.text_input(label=':orange[top k]', value=st.session_state['model_top_k'])
-        st.session_state['model_min_p'] = st.text_input(label=':orange[min p]', value=st.session_state['model_min_p'])
-        st.session_state['repeat_penalty'] = st.text_input(label=':orange[repeat_penalty]', value=st.session_state['repeat_penalty'])
+    st.session_state.function_calling = st.toggle(':orange[enable function calling]', value=st.session_state.function_calling)
+    st.caption(body="custom model template")
+    st.session_state.sys_prompt = st.text_area(label='custom prompt', value="", label_visibility='collapsed')
+    st.caption(body="model parameters")
+    st.session_state['model_temperature'] = st.text_input(label=':orange[temperature]', value=st.session_state['model_temperature'])
+    st.session_state['model_top_p'] = st.text_input(label=':orange[top p]', value=st.session_state['model_top_p'] )
+    st.session_state['model_top_k'] = st.text_input(label=':orange[top k]', value=st.session_state['model_top_k'])
+    st.session_state['model_min_p'] = st.text_input(label=':orange[min p]', value=st.session_state['model_min_p'])
+    st.session_state['repeat_penalty'] = st.text_input(label=':orange[repeat_penalty]', value=st.session_state['repeat_penalty'])
+    if st.button(":violet[shutdown]", help='shut down app on server side'):
+        clear_vram()
+        try:
+            os.remove('.google-cookie')
+        except: pass
+        keyboard.press_and_release('ctrl+w')
+        llmon_process_id = os.getpid()
+        process = psutil.Process(llmon_process_id)
+        process.terminate()
 
 class ChatTemplate:
     def chat_template(prompt="", function_result=""):
@@ -174,7 +157,7 @@ class Moondream:
     def init():
         model_id = "vikhyatk/moondream2"
         revision = "2024-05-08"
-        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to(device='cuda', dtype=torch.float16) 
+        st.session_state['moondream'] = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision=revision).to('cpu')
         st.session_state.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
 
     def generate_response(prompt=str):

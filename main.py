@@ -4,7 +4,8 @@ import os
 from pywhispercpp.model import Model
 from llama_cpp import Llama
 
-st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="centered", initial_sidebar_state="collapsed")
+st.title('🍋 llmon-py', anchor='https://github.com/3eeps/llmon-py')
 
 if 'init_app' not in st.session_state:
     llmon.init_state()
@@ -13,7 +14,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "chat_model" not in st.session_state:
-    st.toast(body=f"🍋 :orange[welcome to llmon-py...]")
     st.session_state["chat_model"] = Llama(model_path=f"./llama-3-8b-instruct.gguf",
                                             n_batch=st.session_state['batch_size'],
                                             n_threads=st.session_state['cpu_core_count'],
@@ -39,7 +39,6 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 if user_text_prompt:= st.chat_input(placeholder=''):
-    st.toast(body='🍋 :orange[generating...]')
     user_prompt = user_text_prompt
     if user_text_prompt == " ":
         user_prompt = llmon.Audio.voice_to_text()
