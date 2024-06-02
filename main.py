@@ -43,15 +43,15 @@ if user_text_input:= st.chat_input(placeholder=''):
     if user_input == " ":
         try: user_input = llmon.Audio.voice_to_text()
         except: pass
-    user_message = st.chat_message(name="user")
-    user_message.write(user_input)
 
-    if st.session_state.bytes_data:
-        try:
-            st.image("ocr_upload_image.png", clamp=True)
-            st.session_state.bytes_data = None
-            os.remove("ocr_upload_image.png")
-        except: pass
+    with st.chat_message(name="user"):
+        st.write(user_input)
+        if st.session_state.bytes_data:
+            try:
+                st.image("ocr_upload_image.png", clamp=True)
+                st.session_state.bytes_data = None
+                os.remove("ocr_upload_image.png")
+            except: pass
     st.session_state.messages.append({"role": "user", "content": user_input})
     st.session_state['message_list'].append(f"""user: {user_input}""")
 
@@ -92,14 +92,14 @@ if user_text_input:= st.chat_input(placeholder=''):
                 model_output_text = llmon.model_inference(prompt=value_name[0])
     except: pass
 
-    model_response = st.chat_message(name="assistant", avatar="🍋")
-    model_response.write(model_output_text)
-    try:
-        st.image('image_turbo.png')
-        os.remove('image_turbo.png')
-    except: pass
-    if st.session_state.video_link and st.session_state.first_watch == False:
-        st.session_state.first_watch = True
-        st.video(data=st.session_state.video_link)
+    with st.chat_message(name="assistant"):
+        st.write(model_output_text)
+        try:
+            st.image('image_turbo.png')
+            os.remove('image_turbo.png')
+        except: pass
+        if st.session_state.video_link and st.session_state.first_watch == False:
+            st.session_state.first_watch = True
+            st.video(data=st.session_state.video_link)
     st.session_state.messages.append({"role": "assistant", "content": model_output_text})
     st.session_state['message_list'].append(f"You: {model_output_text}")
