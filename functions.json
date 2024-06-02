@@ -1,5 +1,19 @@
 [
   {
+    "name": "user_chat",
+    "description": "Reply to user chat message when no function call matches the users query.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "user_message": {
+          "type": "string",
+          "description": "Message from the user. Example: 'Hello AI!' "
+        }
+      },
+      "required": ["user_message"]
+    }
+  },
+  {
     "name": "describe_image",
     "description": "Answer questions about an image.",
     "parameters": {
@@ -7,7 +21,7 @@
       "properties": {
         "user_query": {
           "type": "string",
-          "description": "Users question about the image."
+          "description": "The query provided by the user."
         }
       },
       "required": ["user_query"]
@@ -15,13 +29,13 @@
   },
   {
     "name": "create_image",
-    "description": "Generates a image from the users prompt.",
+    "description": "Generate an image from a prompt.",
     "parameters": {
       "type": "object",
       "properties": {
         "image_prompt": {
           "type": "string",
-          "description": "Prompt used to generate the image."
+          "description": "The prompt required to generate image."
         }
       },
       "required": ["image_prompt"]
@@ -33,12 +47,12 @@
     "parameters": {
       "type": "object",
       "properties": {
-        "youtube_query": {
+        "search_string": {
           "type": "string",
-          "description": "The YouTube search query provided by the user."
+          "description": "The YouTube search string provided by the user."
         }
       },
-      "required": ["youtube_query"]
+      "required": ["search_string"]
     }
   }
 ]

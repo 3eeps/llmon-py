@@ -5,7 +5,6 @@ from pywhispercpp.model import Model
 from llama_cpp import Llama
 
 st.set_page_config(page_title="llmon-py", page_icon="🍋", layout="centered", initial_sidebar_state="collapsed")
-st.title('🍋 llmon-py', anchor='https://github.com/3eeps/llmon-py')
 
 if 'init_app' not in st.session_state:
     llmon.init_state()
@@ -32,30 +31,32 @@ if 'speech_tt_model' not in st.session_state:
     st.session_state['speech_tt_model'] = Model(models_dir='./speech models', n_threads=10)
 
 with st.sidebar:
+    st.title('🍋 llmon-py', anchor='https://github.com/3eeps/llmon-py')
     llmon.sidebar()
 
 for message in st.session_state.messages:
-    with st.chat_message(name=message["role"]):
-        st.markdown(message["content"])
+    message = st.chat_message(name=message['role'])
+    message.write(message["content"])
 
-if user_text_prompt:= st.chat_input(placeholder=''):
-    user_prompt = user_text_prompt
-    if user_text_prompt == " ":
-        user_prompt = llmon.Audio.voice_to_text()
-    final_prompt = llmon.ChatTemplate.chat_template(prompt=user_prompt)
+if user_text_input:= st.chat_input(placeholder=''):
+    user_input = user_text_input
+    if user_input == " ":
+        try: user_input = llmon.Audio.voice_to_text()
+        except: pass
+    user_message = st.chat_message(name="user")
+    user_message.write(user_input)
 
-    with st.chat_message(name="user"):
-        st.markdown(user_prompt)
-        if st.session_state.bytes_data:
-            try:
-                st.image("ocr_upload_image.png", clamp=True)
-                st.session_state.bytes_data = None
-                os.remove("ocr_upload_image.png")
-            except: pass
-    st.session_state.messages.append({"role": "user", "content": user_prompt})
-    st.session_state['message_list'].append(f"""user: {user_prompt}""")
+    if st.session_state.bytes_data:
+        try:
+            st.image("ocr_upload_image.png", clamp=True)
+            st.session_state.bytes_data = None
+            os.remove("ocr_upload_image.png")
+        except: pass
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    st.session_state['message_list'].append(f"""user: {user_input}""")
 
-    model_output_text, st.session_state['model_output_tokens'] = llmon.model_inference(prompt=final_prompt)
+    final_template = llmon.ChatTemplate.chat_template(prompt=user_input)
+    model_output_text = llmon.model_inference(prompt=final_template)
     try:
         if st.session_state.function_calling:
             model_output_dict = eval(model_output_text)
@@ -65,7 +66,7 @@ if user_text_prompt:= st.chat_input(placeholder=''):
             value_name = [value for key, value in func_value_dict.items()]
             print(f"""{model_output_dict}\n{func_value_dict}\n{output_function}\n{value_name}""")
             
-            if output_function == "answer_other_questions":
+            if output_function == "user_chat":
                 st.session_state.function_results = "func_reply"
 
             if output_function == "describe_image":
@@ -78,25 +79,27 @@ if user_text_prompt:= st.chat_input(placeholder=''):
             if output_function == "video_player":
                 st.session_state.video_link = llmon.Functions.find_youtube_link(user_query=value_name[0])
                 st.session_state.first_watch = False
-                no_text_output = True
+                link_text_output = True
+                st.session_state.messages.append({"role": "assistant", "content": value_name[0]})
+                st.session_state['message_list'].append(f"You: {value_name[0]}")
 
-            final_prompt = llmon.ChatTemplate.chat_template(prompt=user_prompt, function_result=st.session_state.function_results)
+            final_function_template = llmon.ChatTemplate.chat_template(prompt=user_input, function_result=st.session_state.function_results)
             if no_text_output == False:
-                model_output_text, st.session_state['model_output_tokens'] = llmon.model_inference(prompt=final_prompt)
+                model_output_text = llmon.model_inference(prompt=final_function_template)
             if no_text_output: 
                 model_output_text = ""
+            if link_text_output:
+                model_output_text = llmon.model_inference(prompt=value_name[0])
     except: pass
 
-    with st.chat_message(name="assistant", avatar="🍋"):
-        try:
-            st.image('image_turbo.png')
-            os.remove('image_turbo.png')
-        except: pass
-        if st.session_state.video_link and st.session_state.first_watch == False:
-            try:
-                st.session_state.first_watch = True
-                st.video(data=st.session_state.video_link)
-            except: pass
-        st.markdown(model_output_text)
+    model_response = st.chat_message(name="assistant", avatar="🍋")
+    model_response.write(model_output_text)
+    try:
+        st.image('image_turbo.png')
+        os.remove('image_turbo.png')
+    except: pass
+    if st.session_state.video_link and st.session_state.first_watch == False:
+        st.session_state.first_watch = True
+        st.video(data=st.session_state.video_link)
     st.session_state.messages.append({"role": "assistant", "content": model_output_text})
     st.session_state['message_list'].append(f"You: {model_output_text}")

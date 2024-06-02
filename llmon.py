@@ -19,7 +19,7 @@ def model_inference(prompt=""):
                                                         top_p=float(st.session_state['model_top_p']),
                                                         min_p=float(st.session_state['model_min_p']),
                                                         temperature=float(st.session_state['model_temperature']))
-    return model_output['choices'][0]['text'], model_output['usage']['total_tokens']
+    return model_output['choices'][0]['text']
 
 def clear_vram():
     model_list = ['chat_model', 'sdxl_turbo', 'moondream']
@@ -28,7 +28,7 @@ def clear_vram():
 
 def init_state():
     default_settings_state = {'user_audio_length': 8,
-                            'max_context': 16384,
+                            'max_context': 8192,
                             'gpu_layer_count': -1,
                             'cpu_core_count': 8,
                             'cpu_batch_count': 8,
