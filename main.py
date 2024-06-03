@@ -121,6 +121,6 @@ if st.session_state.start_app:
             if st.session_state.video_link and st.session_state.first_watch == False:
                 st.session_state.first_watch = True
                 st.video(data=st.session_state.video_link)
-            st.caption('4096/8192')
+            #st.caption('4096/8192')
         st.session_state.messages.append({"role": "assistant", "content": model_output_text})
         st.session_state['message_list'].append(f"You: {model_output_text}")
