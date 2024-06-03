@@ -6,6 +6,15 @@ from llama_cpp import Llama
 
 st.set_page_config(page_title="llmon-py", page_icon="page_icon.png", layout="centered", initial_sidebar_state="collapsed")
 
+st.markdown(
+    r"""
+    <style>
+    .stDeployButton {
+            visibility: hidden;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
 if 'init_app' not in st.session_state:
     llmon.init_state()
 
@@ -74,7 +83,8 @@ if st.session_state.start_app:
         st.session_state['message_list'].append(f"""user: {user_input}""")
 
         final_template = llmon.ChatTemplate.chat_template(prompt=user_input)
-        model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_template)
+        with st.spinner('🍋 generating...'):
+            model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_template)
         try:
             if st.session_state.function_calling:
                 model_output_dict = eval(model_output_text)
@@ -113,7 +123,8 @@ if st.session_state.start_app:
         except: pass
 
         with st.chat_message(name="assistant"):
-            st.write(model_output_text)
+            st.write_stream(llmon.stream_text(text=model_output_text))
+            #st.write(model_output_text)
             try:
                 st.image('image_turbo.png')
                 os.remove('image_turbo.png')

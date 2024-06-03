@@ -3,6 +3,7 @@ import os
 import sounddevice
 import psutil
 import json
+from time import sleep
 import keyboard
 from scipy.io.wavfile import write as write_wav
 from googlesearch import search
@@ -32,6 +33,11 @@ def clear_vram():
     model_list = ['chat_model', 'sdxl_turbo', 'moondream']
     for model_in_vram in model_list:
         del st.session_state[model_in_vram]
+
+def stream_text(text=""):
+    for word in text.split(" "):
+        yield word + " "
+        sleep(0.03)
 
 def init_state():
     default_settings_state = {
