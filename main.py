@@ -13,13 +13,12 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "chat_model" not in st.session_state:
-    st.session_state["chat_model"] = Llama(model_path=f"./llama-3-8b-instruct.gguf",
-                                            n_batch=st.session_state['batch_size'],
-                                            n_threads=st.session_state['cpu_core_count'],
-                                            n_threads_batch=st.session_state['cpu_batch_count'],
-                                            n_gpu_layers=int(st.session_state['gpu_layer_count']),
-                                            n_ctx=st.session_state['max_context'],
-                                            verbose=True)
+    st.session_state["chat_model"] = Llama(model_path=f"./{st.session_state['model_select']}",
+        n_batch=st.session_state['batch_size'],
+        n_threads=st.session_state['cpu_core_count'],
+        n_threads_batch=st.session_state['cpu_batch_count'],
+        n_gpu_layers=int(st.session_state['gpu_layer_count']),
+        n_ctx=st.session_state['max_context'], verbose=True)
 
 if "moondream" not in st.session_state:
     llmon.Moondream.init()
@@ -35,8 +34,8 @@ with st.sidebar:
     llmon.sidebar()
 
 for message in st.session_state.messages:
-    message = st.chat_message(name=message['role'])
-    message.write(message["content"])
+    with st.chat_message(name=message['role']):
+        st.write(message["content"])
 
 if user_text_input:= st.chat_input(placeholder=''):
     user_input = user_text_input
@@ -67,29 +66,31 @@ if user_text_input:= st.chat_input(placeholder=''):
             print(f"""{model_output_dict}\n{func_value_dict}\n{output_function}\n{value_name}""")
             
             if output_function == "user_chat":
-                st.session_state.function_results = "func_reply"
+                st.session_state.function_results = 'func_reply'
+                text_output = True
 
             if output_function == "describe_image":
                 st.session_state.function_results = llmon.Moondream.generate_response(prompt=value_name[0])
 
             if output_function == "create_image":
                 llmon.SDXLTurbo.generate_image(prompt=value_name[0])
-                no_text_output = True
+                text_output = False
             
             if output_function == "video_player":
                 st.session_state.video_link = llmon.Functions.find_youtube_link(user_query=value_name[0])
                 st.session_state.first_watch = False
-                link_text_output = True
+                display_link = True
                 st.session_state.messages.append({"role": "assistant", "content": value_name[0]})
                 st.session_state['message_list'].append(f"You: {value_name[0]}")
 
             final_function_template = llmon.ChatTemplate.chat_template(prompt=user_input, function_result=st.session_state.function_results)
-            if no_text_output == False:
+            if text_output:
                 model_output_text = llmon.model_inference(prompt=final_function_template)
-            if no_text_output: 
+            if text_output == False: 
                 model_output_text = ""
-            if link_text_output:
-                model_output_text = llmon.model_inference(prompt=value_name[0])
+            if display_link:
+                model_output_text = value_name[0]
+
     except: pass
 
     with st.chat_message(name="assistant"):
