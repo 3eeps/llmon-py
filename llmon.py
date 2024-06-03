@@ -81,7 +81,7 @@ def sidebar():
             st.session_state.custom_template = ""
             st.session_state.token_count = 0
 
-    st.title('🍋 llmon-py', anchor='https://github.com/3eeps/llmon-py')
+    st.title('🍋 llmon-py')
 
     uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
     if uploaded_file:

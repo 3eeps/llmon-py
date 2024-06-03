@@ -1,10 +1,12 @@
 import streamlit as st
-import llmon
-import os
-from pywhispercpp.model import Model
-from llama_cpp import Llama
-
 st.set_page_config(page_title="llmon-py", page_icon="page_icon.png", layout="centered", initial_sidebar_state="collapsed")
+lcol1, lcol2, lcol3 = st.columns([1,1,1])
+with lcol2:
+    with st.spinner('🍋 starting app...'):
+        import llmon
+        import os
+        from pywhispercpp.model import Model
+        from llama_cpp import Llama
 
 st.markdown(
     r"""
@@ -99,10 +101,12 @@ if st.session_state.start_app:
                     text_output = True
 
                 if output_function == "describe_image":
-                    st.session_state.function_results = llmon.Moondream.generate_response(prompt=value_name[0])
+                    with st.spinner('🍋 generating...'):
+                        st.session_state.function_results = llmon.Moondream.generate_response(prompt=value_name[0])
 
                 if output_function == "create_image":
-                    llmon.SDXLTurbo.generate_image(prompt=value_name[0])
+                    with st.spinner('🍋 generating...'):
+                        llmon.SDXLTurbo.generate_image(prompt=value_name[0])
                     text_output = False
                 
                 if output_function == "video_player":
@@ -114,7 +118,8 @@ if st.session_state.start_app:
 
                 final_function_template = llmon.ChatTemplate.chat_template(prompt=user_input, function_result=st.session_state.function_results)
                 if text_output:
-                    model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_function_template)
+                    with st.spinner('🍋 generating...'):
+                        model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_function_template)
                 if text_output == False: 
                     model_output_text = ""
                 if display_link:
@@ -124,7 +129,6 @@ if st.session_state.start_app:
 
         with st.chat_message(name="assistant"):
             st.write_stream(llmon.stream_text(text=model_output_text))
-            #st.write(model_output_text)
             try:
                 st.image('image_turbo.png')
                 os.remove('image_turbo.png')
