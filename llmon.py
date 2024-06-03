@@ -72,9 +72,9 @@ def init_state():
             st.session_state[key] = value
 
 def sidebar(): 
-    col1, col2, col3 = st.columns([1,1,1])
+    col1, col2, col3 = st.columns([3,2,1])
     with col3:
-        if st.button(label=':orange[new chat]'):
+        if st.button(label='✨', help='start a new chat'):
             st.session_state['message_list'] = []
             st.session_state.messages = []
             st.session_state.function_calling = False
