@@ -26,6 +26,7 @@ def model_inference(prompt=""):
                                                         top_p=float(st.session_state['model_top_p']),
                                                         min_p=float(st.session_state['model_min_p']),
                                                         temperature=float(st.session_state['model_temperature']))
+
     return model_output['choices'][0]['text']
 
 def clear_vram():
@@ -40,15 +41,16 @@ def init_state():
         'cpu_core_count': 8,
         'cpu_batch_count': 8,
         'batch_size': 256,
-        'model_temperature': 0.95,
-        'model_top_p': 0.90,
-        'model_top_k': 120,
-        'model_min_p': 0.0,
-        'repeat_penalty': 1.5,
+        'model_temperature': 0.85,
+        'model_top_p': 0.0,
+        'model_top_k': 0,
+        'model_min_p': 0.06,
+        'repeat_penalty': 1.1,
         'message_list': [],
         'init_app': True,
         'model_select': 'Meta-Llama-3-8B-Instruct.Q6_K.gguf'}
-    
+    st.session_state.show_start_card = True
+    st.session_state.start_app = False
     st.session_state.function_calling = False
     st.session_state.function_results = ""
     st.session_state.custom_template = ""
@@ -64,11 +66,15 @@ def init_state():
             st.session_state[key] = value
 
 def sidebar(): 
-    if st.button(label=':orange[new chat]'):
-        st.session_state['message_list'] = []
-        st.session_state.messages = []
-        st.session_state.function_calling = False
-        st.session_state.custom_template = ""
+    col1, col2, col3 = st.columns([1,1,1])
+    with col3:
+        if st.button(label=':orange[new chat]'):
+            st.session_state['message_list'] = []
+            st.session_state.messages = []
+            st.session_state.function_calling = False
+            st.session_state.custom_template = ""
+
+    st.title('🍋 llmon-py', anchor='https://github.com/3eeps/llmon-py')
 
     uploaded_file = st.file_uploader(label='file uploader', label_visibility='collapsed', type=['png', 'jpeg'])
     if uploaded_file:
@@ -80,25 +86,31 @@ def sidebar():
     st.caption(body="custom model template")
     st.session_state.custom_template = st.text_area(label='custom prompt', value="", label_visibility='collapsed', disabled=st.session_state.function_calling)
     st.caption(body="model parameters")
-    temp_help = """determinines whether the output is more random and creative or more predictable. :green[a higher temperature will result in lower probability], i.e more creative outputs."""
-    top_p_help = """controls the diversity of the generated text by only considering tokens with the highest probability mass. :green[top_p = 0.1: only tokens within the top 10% probability are considered. 0.9: considers tokens within the top 90% probability]."""
-    top_k_help = """limits the model's output to the top-k most probable tokens at each step. This can help reduce incoherent or nonsensical output by restricting the model's vocabulary. :green[a top-K of 1 means the next selected token is the most probable among all tokens in the model's vocabulary]."""
-    min_p_help = """different from top k or top p, sets a minimum percentage requirement to consider tokens relative to the largest token probability. :green[for example, min p = 0.1 is equivalent to only considering tokens at least 1/10th the top token probability]."""
-    rep_help = """helps the model generate more diverse content instead of repeating previous phrases. Repetition is prevented by applying a high penalty to phrases or words that tend to be repeated. :green[a higher penalty generally results in more diverse outputs, whilst a lower value might lead to more repetition]."""
+    temp_help = "determinines whether the output is more random and creative or more predictable. :green[a higher temperature will result in lower probability], i.e more creative outputs."
+    top_p_help = "controls the diversity of the generated text by only considering tokens with the highest probability mass. :green[top_p = 0.1: only tokens within the top 10% probability are considered. 0.9: considers tokens within the top 90% probability]."
+    top_k_help = "limits the model's output to the top-k most probable tokens at each step. This can help reduce incoherent or nonsensical output by restricting the model's vocabulary. :green[a top-K of 1 means the next selected token is the most probable among all tokens in the model's vocabulary]."
+    min_p_help = "different from top k or top p, sets a minimum percentage requirement to consider tokens relative to the largest token probability. :green[for example, min p = 0.1 is equivalent to only considering tokens at least 1/10th the top token probability]."
+    rep_help = "helps the model generate more diverse content instead of repeating previous phrases. Repetition is prevented by applying a high penalty to phrases or words that tend to be repeated. :green[a higher penalty generally results in more diverse outputs, whilst a lower value might lead to more repetition]."
     st.session_state['model_temperature'] = st.text_input(label=':orange[temperature]', value=st.session_state['model_temperature'], disabled=st.session_state.function_calling, help=temp_help)
     st.session_state['model_top_p'] = st.text_input(label=':orange[top p]', value=st.session_state['model_top_p'], disabled=st.session_state.function_calling, help=top_p_help)
     st.session_state['model_top_k'] = st.text_input(label=':orange[top k]', value=st.session_state['model_top_k'], disabled=st.session_state.function_calling, help=top_k_help)
     st.session_state['model_min_p'] = st.text_input(label=':orange[min p]', value=st.session_state['model_min_p'], disabled=st.session_state.function_calling, help=min_p_help)
     st.session_state['repeat_penalty'] = st.text_input(label=':orange[repetition penalty]', value=st.session_state['repeat_penalty'], disabled=st.session_state.function_calling, help=rep_help)
-    if st.button(":violet[shutdown]", help='shut down app on server side'):
-        clear_vram()
-        try:
-            os.remove('.google-cookie')
-        except: pass
-        keyboard.press_and_release('ctrl+w')
-        llmon_process_id = os.getpid()
-        process = psutil.Process(llmon_process_id)
-        process.terminate()
+    
+    col_1, col_2, col_3 = st.columns([1,1,1])
+    with col_2:
+        if st.button(":orange[shutdown]", help='shut down app on server side'):
+            clear_vram()
+            try:
+                os.remove('.google-cookie')
+            except: pass
+            try:
+                os.remove('server_side.log')
+            except: pass
+            keyboard.press_and_release('ctrl+w')
+            llmon_process_id = os.getpid()
+            process = psutil.Process(llmon_process_id)
+            process.terminate()
 
 class ChatTemplate:
     def chat_template(prompt="", function_result=""):
