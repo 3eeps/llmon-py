@@ -1,1 +1,12 @@
+[client]
+toolbarMode = "minimal"
 
+[theme]
+primaryColor="#171717"
+backgroundColor="#212121"
+secondaryBackgroundColor="#171717"
+textColor="#e4dede"
+font="monospace"
+
+[runner]
+fastReruns = true
