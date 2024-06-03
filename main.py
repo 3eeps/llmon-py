@@ -7,6 +7,7 @@ with lcol2:
         import os
         from pywhispercpp.model import Model
         from llama_cpp import Llama
+        import time
 
 st.markdown(
     r"""
@@ -24,8 +25,7 @@ if st.session_state.start_app == False:
     col1, col2, col3 = st.columns([1,1,1])
     with col2:
         st.image('llmon_logo.png')
-        submit_button = st.button(":orange[click here to start]")
-        if submit_button:
+        if st.button(":orange[click here to start]"):
             st.session_state.start_app = True
             st.rerun()
 
@@ -86,6 +86,7 @@ if st.session_state.start_app:
 
         final_template = llmon.ChatTemplate.chat_template(prompt=user_input)
         with st.spinner('🍋 generating...'):
+            start_time = time.time()
             model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_template)
         try:
             if st.session_state.function_calling:
@@ -124,9 +125,10 @@ if st.session_state.start_app:
                     model_output_text = ""
                 if display_link:
                     model_output_text = value_name[0]
-
         except: pass
 
+        end_time = time.time()
+        execution_time = end_time - start_time
         with st.chat_message(name="assistant"):
             st.write_stream(llmon.stream_text(text=model_output_text))
             try:
@@ -136,6 +138,6 @@ if st.session_state.start_app:
             if st.session_state.video_link and st.session_state.first_watch == False:
                 st.session_state.first_watch = True
                 st.video(data=st.session_state.video_link)
-            st.caption(f"{st.session_state.token_count}/{st.session_state['max_context']}")
+            st.caption(f"ctx:{st.session_state.token_count}/{st.session_state['max_context']} {execution_time:.2f}secs")
         st.session_state.messages.append({"role": "assistant", "content": model_output_text})
         st.session_state['message_list'].append(f"You: {model_output_text}")
