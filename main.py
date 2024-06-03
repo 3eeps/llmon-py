@@ -74,7 +74,7 @@ if st.session_state.start_app:
         st.session_state['message_list'].append(f"""user: {user_input}""")
 
         final_template = llmon.ChatTemplate.chat_template(prompt=user_input)
-        model_output_text = llmon.model_inference(prompt=final_template)
+        model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_template)
         try:
             if st.session_state.function_calling:
                 model_output_dict = eval(model_output_text)
@@ -104,7 +104,7 @@ if st.session_state.start_app:
 
                 final_function_template = llmon.ChatTemplate.chat_template(prompt=user_input, function_result=st.session_state.function_results)
                 if text_output:
-                    model_output_text = llmon.model_inference(prompt=final_function_template)
+                    model_output_text, st.session_state.token_count = llmon.model_inference(prompt=final_function_template)
                 if text_output == False: 
                     model_output_text = ""
                 if display_link:
@@ -121,6 +121,6 @@ if st.session_state.start_app:
             if st.session_state.video_link and st.session_state.first_watch == False:
                 st.session_state.first_watch = True
                 st.video(data=st.session_state.video_link)
-            #st.caption('4096/8192')
+            st.caption(f"{st.session_state.token_count}/{st.session_state['max_context']}")
         st.session_state.messages.append({"role": "assistant", "content": model_output_text})
         st.session_state['message_list'].append(f"You: {model_output_text}")

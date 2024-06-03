@@ -26,8 +26,7 @@ def model_inference(prompt=""):
                                                         top_p=float(st.session_state['model_top_p']),
                                                         min_p=float(st.session_state['model_min_p']),
                                                         temperature=float(st.session_state['model_temperature']))
-
-    return model_output['choices'][0]['text']
+    return model_output['choices'][0]['text'], model_output['usage']['total_tokens']
 
 def clear_vram():
     model_list = ['chat_model', 'sdxl_turbo', 'moondream']
@@ -49,6 +48,7 @@ def init_state():
         'message_list': [],
         'init_app': True,
         'model_select': 'Meta-Llama-3-8B-Instruct.Q6_K.gguf'}
+    st.session_state.token_count = 0
     st.session_state.show_start_card = True
     st.session_state.start_app = False
     st.session_state.function_calling = False
@@ -73,6 +73,7 @@ def sidebar():
             st.session_state.messages = []
             st.session_state.function_calling = False
             st.session_state.custom_template = ""
+            st.session_state.token_count = 0
 
     st.title('🍋 llmon-py', anchor='https://github.com/3eeps/llmon-py')
 
