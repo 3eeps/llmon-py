@@ -2,4 +2,4 @@
 
 llmon-py is a WIP multimodal webui for inferencing Llama3-8B via text, voice and function calling.
 
-![image](https://github.com/3eeps/llmon-py/assets/55860052/1dac0332-7c51-4a17-b25f-ac401c944355)
+![image](https://github.com/3eeps/llmon-py/assets/55860052/ac3556bc-5e3d-4d5c-bdea-d5f2e6f60ed9)
