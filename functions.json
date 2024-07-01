@@ -1,7 +1,7 @@
 [
   {
-    "name": "user_chat",
-    "description": "Reply to user chat message when no function call matches the users query.",
+    "name": "no_function_message",
+    "description": "Reply to user message when the function calls below do not matches the users query.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -11,6 +11,20 @@
         }
       },
       "required": ["user_message"]
+    }
+  },
+  {
+    "name": "change_voice_style",
+    "description": "Allows the user to change the tone and style of the current text to speech model based on a prompt.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "voice_style": {
+          "type": "string",
+          "description": "Style description from the user. Example: A male voice that is calm but stern."
+        }
+      },
+      "required": ["voice_style"]
     }
   },
   {
@@ -43,16 +57,16 @@
   },
   {
     "name": "video_player",
-    "description": "Get a YouTube search query and play video in chat window.",
+    "description": "Retrieve YouTube query and play the video in the chat.",
     "parameters": {
       "type": "object",
       "properties": {
-        "youtube_search_query": {
+        "youtube_query": {
           "type": "string",
-          "description": "The YouTube search query provided by the user."
+          "description": "The YouTube query provided by the user."
         }
       },
-      "required": ["youtube_search_query"]
+      "required": ["youtube_query"]
     }
   }
 ]
